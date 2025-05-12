@@ -25,8 +25,6 @@ export default function Home() {
     // 检查该格子是否已有课程
     if (courses.some((c) => c.dayOfWeek === dayOfWeek && c.timeSlotId === timeSlotId)) return;
     // 生成新课程
-    const colorList = ["blue", "green", "purple", "yellow", "red", "orange", "pink", "cyan"];
-    const color = colorList[courses.length % colorList.length];
     setCourses([
       ...courses,
       {
@@ -36,7 +34,6 @@ export default function Home() {
         timeSlotId,
         startTime: "",
         endTime: "",
-        color,
       },
     ]);
   };
@@ -59,17 +56,9 @@ export default function Home() {
         {activeId != null ? (() => {
           const course = courseItems.find(c => c.courseNameId === activeId);
           if (!course) return null;
-          const colorClasses = [
-            'bg-blue-100 border-l-4 border-blue-500',
-            'bg-green-100 border-l-4 border-green-500',
-            'bg-purple-100 border-l-4 border-purple-500',
-            'bg-yellow-100 border-l-4 border-yellow-500',
-            'bg-red-100 border-l-4 border-red-500',
-          ];
-          const idx = courseItems.findIndex(c => c.courseNameId === activeId);
           return (
             <div
-              className={`px-3 py-2 rounded ${colorClasses[idx % colorClasses.length]} select-none flex items-center justify-between shadow-lg`}
+              className={`px-3 py-2 rounded select-none flex items-center justify-between shadow-lg`}
               style={{ minWidth: 100 }}
             >
               <span className="font-medium">{course.courseName}</span>
@@ -83,14 +72,14 @@ export default function Home() {
 
 // 默认课程表数据
 const defaultCourses: Course[] = [
-  { id: '1', name: '高等数学', dayOfWeek: 1, timeSlotId: 1, startTime: '08:00', endTime: '09:30', color: 'blue' },
-  { id: '2', name: '大学英语', dayOfWeek: 1, timeSlotId: 2, startTime: '09:30', endTime: '11:00', color: 'green' },
-  { id: '3', name: '线性代数', dayOfWeek: 2, timeSlotId: 3, startTime: '11:10', endTime: '12:40', color: 'red' },
-  { id: '4', name: '计算机基础', dayOfWeek: 2, timeSlotId: 4, startTime: '12:40', endTime: '14:10', color: 'purple' },
-  { id: '5', name: '物理实验', dayOfWeek: 3, timeSlotId: 5, startTime: '14:30', endTime: '16:00', color: 'orange' },
-  { id: '6', name: '程序设计', dayOfWeek: 3, timeSlotId: 6, startTime: '16:10', endTime: '17:40', color: 'pink' },
-  { id: '7', name: '大学物理', dayOfWeek: 4, timeSlotId: 1, startTime: '08:00', endTime: '09:30', color: 'cyan' },
-  { id: '8', name: '思想政治', dayOfWeek: 4, timeSlotId: 2, startTime: '09:30', endTime: '11:00', color: 'yellow' },
+  { id: '1', name: '高等数学', dayOfWeek: 1, timeSlotId: 1, startTime: '08:00', endTime: '09:30' },
+  { id: '2', name: '大学英语', dayOfWeek: 1, timeSlotId: 2, startTime: '09:30', endTime: '11:00' },
+  { id: '3', name: '线性代数', dayOfWeek: 2, timeSlotId: 3, startTime: '11:10', endTime: '12:40' },
+  { id: '4', name: '计算机基础', dayOfWeek: 2, timeSlotId: 4, startTime: '12:40', endTime: '14:10' },
+  { id: '5', name: '物理实验', dayOfWeek: 3, timeSlotId: 5, startTime: '14:30', endTime: '16:00' },
+  { id: '6', name: '程序设计', dayOfWeek: 3, timeSlotId: 6, startTime: '16:10', endTime: '17:40' },
+  { id: '7', name: '大学物理', dayOfWeek: 4, timeSlotId: 1, startTime: '08:00', endTime: '09:30' },
+  { id: '8', name: '思想政治', dayOfWeek: 4, timeSlotId: 2, startTime: '09:30', endTime: '11:00' },
 ];
 
 // 默认可拖拽课程项

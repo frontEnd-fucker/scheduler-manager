@@ -36,14 +36,6 @@ interface DraggableCoursesProps {
   onAddCourse?: (course: { courseName: string; courseNameId: number }) => void;
 }
 
-const colorClasses = [
-  'bg-blue-100 border-l-4 border-blue-500',
-  'bg-green-100 border-l-4 border-green-500',
-  'bg-purple-100 border-l-4 border-purple-500',
-  'bg-yellow-100 border-l-4 border-yellow-500',
-  'bg-red-100 border-l-4 border-red-500',
-];
-
 export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mockCourses, onAddCourse }: DraggableCoursesProps) => {
   const [courseList, setCourseList] = useState<CourseItems>(courses);
   const [newCourseName, setNewCourseName] = useState('');
@@ -94,7 +86,7 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mo
               ref={setNodeRef}
               {...attributes}
               {...listeners}
-              className={`group relative course-item px-3 py-2 rounded ${colorClasses[idx % colorClasses.length]} select-none flex items-center justify-between transition-shadow ${isDragging ? 'ring-2 ring-blue-400 shadow-lg opacity-80' : ''}`}
+              className={`group relative course-item px-3 py-2 rounded select-none flex items-center justify-between transition-shadow ${isDragging ? 'ring-2 ring-blue-400 shadow-lg opacity-80' : ''}`}
               style={{ cursor: 'grab', opacity: isDragging ? 0.5 : 1 }}
             >
               <span className="font-medium">{course.courseName}</span>

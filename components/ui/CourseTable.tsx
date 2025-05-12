@@ -8,7 +8,6 @@ export interface Course {
   timeSlotId: number;
   startTime: string;
   endTime: string;
-  color: string;
 }
 
 export interface TimeSlot {
@@ -87,7 +86,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                   {course ? (
                     <div className="w-full h-full p-1 flex items-center justify-center">
                       <div
-                        className={`group relative course-item px-4 py-3 select-none flex items-center justify-between w-full h-full border-l-4 bg-${course.color}-100 border-${course.color}-500 rounded-r-sm`}
+                        className={"group relative course-item px-4 py-3 select-none flex items-center justify-between w-full h-full border-l-4 bg-gray-100 border-gray-300 rounded-r-sm"}
                         draggable
                         // onDragStart/onDragEnd handlers can be added here
                       >
