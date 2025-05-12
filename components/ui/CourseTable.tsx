@@ -33,6 +33,55 @@ export interface CourseTableProps {
 
 const dayNames = ["周一", "周二", "周三", "周四", "周五"];
 
+// 创建单独的可放置单元格组件
+const DroppableCell = ({ 
+  day, 
+  timeSlot, 
+  course, 
+  onCourseDelete 
+}: { 
+  day: number; 
+  timeSlot: number; 
+  course?: Course; 
+  onCourseDelete?: (courseId: string) => void;
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `${day}-${timeSlot}`,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`bg-white min-h-[56px] relative group schedule-cell border border-gray-100 flex items-center justify-center transition-colors ${isOver ? 'ring-2 ring-blue-400 bg-blue-50' : ''}`}
+      data-day={day}
+      data-time={timeSlot}
+    >
+      {course ? (
+        <div className="w-full h-full p-1 flex items-center justify-center">
+          <div
+            className={`group relative course-item px-4 py-3 select-none flex items-center justify-between w-full h-full ${getCourseColorClasses(course.name)} rounded-r-sm`}
+            draggable
+            // onDragStart/onDragEnd handlers can be added here
+          >
+            <span className="font-medium text-base">{course.name}</span>
+            {onCourseDelete && (
+              <button
+                type="button"
+                className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 hover:cursor-pointer"
+                onClick={() => onCourseDelete(course.id)}
+                tabIndex={-1}
+                aria-label="删除课程"
+              >
+                <span className="w-4 h-4 text-red-400 hover:text-red-600 inline-block align-middle">×</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
 export const CourseTable: React.FC<CourseTableProps> = ({
   courses,
   timeSlots,
@@ -72,41 +121,14 @@ export const CourseTable: React.FC<CourseTableProps> = ({
               const course = courses.find(
                 (c) => c.dayOfWeek === dayIdx + 1 && c.timeSlotId === slot.id
               );
-              // droppable id: `${dayIdx+1}-${slot.id}`
-              const { setNodeRef, isOver } = useDroppable({
-                id: `${dayIdx + 1}-${slot.id}`,
-              });
               return (
-                <div
+                <DroppableCell
                   key={dayIdx}
-                  ref={setNodeRef}
-                  className={`bg-white min-h-[56px] relative group schedule-cell border border-gray-100 flex items-center justify-center transition-colors ${isOver ? 'ring-2 ring-blue-400 bg-blue-50' : ''}`}
-                  data-day={dayIdx + 1}
-                  data-time={slot.id}
-                >
-                  {course ? (
-                    <div className="w-full h-full p-1 flex items-center justify-center">
-                      <div
-                        className={`group relative course-item px-4 py-3 select-none flex items-center justify-between w-full h-full ${getCourseColorClasses(course.name)} rounded-r-sm`}
-                        draggable
-                        // onDragStart/onDragEnd handlers can be added here
-                      >
-                        <span className="font-medium text-base">{course.name}</span>
-                        {onCourseDelete && (
-                          <button
-                            type="button"
-                            className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 hover:cursor-pointer"
-                            onClick={() => onCourseDelete(course.id)}
-                            tabIndex={-1}
-                            aria-label="删除课程"
-                          >
-                            <span className="w-4 h-4 text-red-400 hover:text-red-600 inline-block align-middle">×</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                  day={dayIdx + 1}
+                  timeSlot={slot.id}
+                  course={course}
+                  onCourseDelete={onCourseDelete}
+                />
               );
             })}
             {/* 午休分割线 */}
