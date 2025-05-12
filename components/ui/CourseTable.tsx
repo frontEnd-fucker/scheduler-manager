@@ -1,4 +1,5 @@
 import React from "react";
+import { useDroppable } from '@dnd-kit/core';
 
 export interface Course {
   id: string;
@@ -71,10 +72,15 @@ export const CourseTable: React.FC<CourseTableProps> = ({
               const course = courses.find(
                 (c) => c.dayOfWeek === dayIdx + 1 && c.timeSlotId === slot.id
               );
+              // droppable id: `${dayIdx+1}-${slot.id}`
+              const { setNodeRef, isOver } = useDroppable({
+                id: `${dayIdx + 1}-${slot.id}`,
+              });
               return (
                 <div
                   key={dayIdx}
-                  className="bg-white min-h-[56px] relative group schedule-cell border border-gray-100 flex items-center justify-center"
+                  ref={setNodeRef}
+                  className={`bg-white min-h-[56px] relative group schedule-cell border border-gray-100 flex items-center justify-center transition-colors ${isOver ? 'ring-2 ring-blue-400 bg-blue-50' : ''}`}
                   data-day={dayIdx + 1}
                   data-time={slot.id}
                 >

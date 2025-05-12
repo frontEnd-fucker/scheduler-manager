@@ -14,6 +14,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from './alert-dialog';
+import { useDraggable } from '@dnd-kit/core';
 
 export type CourseItems = Array<{
   courseName: string;
@@ -83,23 +84,32 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mo
     <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 max-w-xs w-full">
       <h2 className="text-base font-semibold mb-2">可拖拽课程</h2>
       <div className="flex flex-col gap-2 mb-4" data-testid="draggable-courses-list">
-        {courseList.map((course, idx) => (
-          <div
-            key={course.courseNameId}
-            className={`group relative course-item px-3 py-2 rounded ${colorClasses[idx % colorClasses.length]} select-none flex items-center justify-between`}
-          >
-            <span className="font-medium">{course.courseName}</span>
-            <button
-              type="button"
-              className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 hover:cursor-pointer"
-              onClick={() => handleDeleteClick(course)}
-              tabIndex={-1}
-              aria-label="删除课程"
+        {courseList.map((course, idx) => {
+          const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+            id: course.courseNameId,
+          });
+          return (
+            <div
+              key={course.courseNameId}
+              ref={setNodeRef}
+              {...attributes}
+              {...listeners}
+              className={`group relative course-item px-3 py-2 rounded ${colorClasses[idx % colorClasses.length]} select-none flex items-center justify-between transition-shadow ${isDragging ? 'ring-2 ring-blue-400 shadow-lg opacity-80' : ''}`}
+              style={{ cursor: 'grab', opacity: isDragging ? 0.5 : 1 }}
             >
-              <TrashIcon className="w-4 h-4 text-red-400 hover:text-red-600" />
-            </button>
-          </div>
-        ))}
+              <span className="font-medium">{course.courseName}</span>
+              <button
+                type="button"
+                className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 hover:cursor-pointer"
+                onClick={() => handleDeleteClick(course)}
+                tabIndex={-1}
+                aria-label="删除课程"
+              >
+                <TrashIcon className="w-4 h-4 text-red-400 hover:text-red-600" />
+              </button>
+            </div>
+          );
+        })}
       </div>
       <div className="flex gap-2 items-center">
         <Input
