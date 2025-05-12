@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程表生成器</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --light-gray: #f3f4f6;
+            --border-color: #e5e7eb;
+            --text-color: #1f2937;
+            --card-bg: #ffffff;
+            
+            /* 课程颜色 */
+            --course-math: #3b82f6;     /* 蓝色 - 高等数学 */
+            --course-english: #10b981;  /* 绿色 - 大学英语 */
+            --course-cs: #8b5cf6;       /* 紫色 - 计算机基础 */
+            --course-physics: #f59e0b;  /* 黄色 - 物理学 */
+            --course-programming: #ef4444; /* 红色 - 程序设计 */
+            --course-new: #6b7280;      /* 灰色 - 新课程 */
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+        
+        header {
+            background-color: white;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .btn {
+            cursor: pointer;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(5, 1fr);
+            gap: 1px;
+            background-color: var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        
+        .time-header, .day-header, .time-slot, .schedule-cell {
+            background-color: var(--card-bg);
+            padding: 0.5rem;
+            text-align: center;
+        }
+        
+        .time-header, .day-header {
+            font-weight: 600;
+            padding: 0.75rem 0.5rem;
+        }
+        
+        .time-slot {
+            grid-column: 1;
+            border-right: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            color: #6b7280;
+        }
+        
+        .divider {
+            grid-column: 1 / -1;
+            background-color: var(--light-gray);
+            padding: 0.25rem;
+            text-align: center;
+            font-weight: 500;
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
+        
+        .course-item {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--primary);
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            cursor: move;
+            text-align: left;
+            margin-bottom: 0;
+        }
+        
+        /* 课程颜色样式 */
+        .course-math {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--course-math);
+        }
+        
+        .course-english {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--course-english);
+        }
+        
+        .course-cs {
+            background-color: rgba(139, 92, 246, 0.1);
+            border-left: 4px solid var(--course-cs);
+        }
+        
+        .course-physics {
+            background-color: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--course-physics);
+        }
+        
+        .course-programming {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--course-programming);
+        }
+        
+        .course-new {
+            background-color: rgba(107, 114, 128, 0.1);
+            border-left: 4px solid var(--course-new);
+        }
+        
+        .course-name {
+            font-weight: 500;
+        }
+        
+        .course-time {
+            display: none;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 15% auto;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .close {
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            font-size: 1rem;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .btn-cancel {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .draggable-course {
+            margin-bottom: 1rem;
+            cursor: move;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .toolbox {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+        
+        .toolbox h2 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 1rem;
+        }
+        
+        .export-options {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .schedule-grid {
+                grid-template-columns: 60px repeat(5, 1fr);
+                font-size: 0.875rem;
+            }
+            
+            .time-slot, .course-time {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>课程表生成器</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="grid-container">
+            <div>
+                <div class="schedule-grid">
+                    <!-- 表头 -->
+                    <div class="time-header"></div>
+                    <div class="day-header">周一</div>
+                    <div class="day-header">周二</div>
+                    <div class="day-header">周三</div>
+                    <div class="day-header">周四</div>
+                    <div class="day-header">周五</div>
+                    
+                    <!-- 上午课程 -->
+                    <!-- 第1节课 -->
+                    <div class="time-slot">8:00<br>-<br>8:45</div>
+                    <div class="schedule-cell" data-time="1" data-day="1"></div>
+                    <div class="schedule-cell" data-time="1" data-day="2">
+                        <div class="course-item course-math">
+                            <div class="course-name">高等数学</div>
+                        </div>
+                    </div>
+                    <div class="schedule-cell" data-time="1" data-day="3"></div>
+                    <div class="schedule-cell" data-time="1" data-day="4">
+                        <div class="course-item course-math">
+                            <div class="course-name">高等数学</div>
+                        </div>
+                    </div>
+                    <div class="schedule-cell" data-time="1" data-day="5"></div>
+                    
+                    <!-- 第2节课 -->
+                    <div class="time-slot">8:55<br>-<br>9:40</div>
+                    <div class="schedule-cell" data-time="2" data-day="1">
+                        <div class="course-item course-english">
+                            <div class="course-name">大学英语</div>
+                        </div>
+                    </div>
+                    <div class="schedule-cell" data-time="2" data-day="2"></div>
+                    <div class="schedule-cell" data-time="2" data-day="3">
+                        <div class="course-item course-english">
+                            <div class="course-name">大学英语</div>
+                        </div>
+                    </div>
+                    <div class="schedule-cell" data-time="2" data-day="4"></div>
+                    <div class="schedule-cell" data-time="2" data-day="5"></div>
+                    
+                    <!-- 第3节课 -->
+                    <div class="time-slot">10:00<br>-<br>10:45</div>
+                    <div class="schedule-cell" data-time="3" data-day="1"></div>
+                    <div class="schedule-cell" data-time="3" data-day="2">
+                        <div class="course-item course-physics">
+                            <div class="course-name">物理学</div>
+                        </div>
+                    </div>
+                    <div class="schedule-cell" data-time="3" data-day="3"></div>
+                    <div class="schedule-cell" data-time="3" data-day="4"></div>
+                    <div class="schedule-cell" data-time="3" data-day="5"></div>
+                    
+                    <!-- 第4节课 -->
+                    <div class="time-slot">10:55<br>-<br>11:40</div>
+                    <div class="schedule-cell" data-time="4" data-day="1"></div>
+                    <div class="schedule-cell" data-time="4" data-day="2"></div>
+                    <div class="schedule-cell" data-time="4" data-day="3"></div>
+                    <div class="schedule-cell" data-time="4" data-day="4">
+                        <div class="course-item course-physics">
+                            <div class="course-name">物理学</div>
+                        </div>
+                    </div>
+                    <div class="schedule-cell" data-time="4" data-day="5"></div>
+                    
+                    <!-- 上下午分割线 -->
+                    <div class="divider">午休时间</div>
+                    
+                    <!-- 下午课程 -->
+                    <!-- 第5节课 -->
+                    <div class="time-slot">14:00<br>-<br>14:45</div>
+                    <div class="schedule-cell" data-time="5" data-day="1"></div>
+                    <div class="schedule-cell" data-time="5" data-day="2"></div>
+                    <div class="schedule-cell" data-time="5" data-day="3"></div>
+                    <div class="schedule-cell" data-time="5" data-day="4"></div>
+                    <div class="schedule-cell" data-time="5" data-day="5">
+                        <div class="course-item course-cs">
+                            <div class="course-name">计算机基础</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 第6节课 -->
+                    <div class="time-slot">14:55<br>-<br>15:40</div>
+                    <div class="schedule-cell" data-time="6" data-day="1">
+                        <div class="course-item course-programming">
+                            <div class="course-name">程序设计</div>
+                        </div>
+                    </div>
+                    <div class="schedule-cell" data-time="6" data-day="2"></div>
+                    <div class="schedule-cell" data-time="6" data-day="3">
+                        <div class="course-item course-programming">
+                            <div class="course-name">程序设计</div>
+                        </div>
+                    </div>
+                    <div class="schedule-cell" data-time="6" data-day="4"></div>
+                    <div class="schedule-cell" data-time="6" data-day="5"></div>
+                </div>
+                
+                <div class="export-options">
+                    <button class="btn">打印课表</button>
+                    <button class="btn">导出为PDF</button>
+                </div>
+            </div>
+            
+            <div>
+                <div class="toolbox">
+                    <h2>可拖拽课程</h2>
+                    <div class="draggable-course" id="draggableCourses">
+                        <div class="course-item course-new">
+                            <div class="course-name">新课程</div>
+                        </div>
+                    </div>
+                    <div id="newCourseInputArea">
+                        <input type="text" id="newCourseName" placeholder="输入课程名称" style="width: 70%; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; font-size: 1rem;">
+                        <button class="btn" id="saveNewCourseBtn" style="margin-left: 0.5rem;">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 简单的拖拽功能模拟
+        document.addEventListener('DOMContentLoaded', () => {
+            const courseItems = document.querySelectorAll('.course-item');
+            const scheduleCells = document.querySelectorAll('.schedule-cell');
+            
+            let draggedItem = null;
+            
+            courseItems.forEach(item => {
+                item.addEventListener('dragstart', function() {
+                    draggedItem = this;
+                    setTimeout(() => {
+                        this.style.opacity = '0.5';
+                    }, 0);
+                });
+                
+                item.addEventListener('dragend', function() {
+                    this.style.opacity = '1';
+                    draggedItem = null;
+                });
+                
+                item.setAttribute('draggable', 'true');
+            });
+            
+            scheduleCells.forEach(cell => {
+                cell.addEventListener('dragover', e => {
+                    e.preventDefault();
+                });
+                
+                cell.addEventListener('dragenter', function(e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                });
+                
+                cell.addEventListener('dragleave', function() {
+                    this.style.backgroundColor = '';
+                });
+                
+                cell.addEventListener('drop', function() {
+                    this.style.backgroundColor = '';
+                    if (!draggedItem) return;
+                    
+                    // 如果单元格已有课程，先移除
+                    if (this.querySelector('.course-item')) {
+                        this.innerHTML = '';
+                    }
+                    
+                    // 克隆被拖拽的元素并添加到单元格
+                    const clonedItem = draggedItem.cloneNode(true);
+                    clonedItem.setAttribute('draggable', 'true');
+                    
+                    // 获取课程名称分配相应的颜色类
+                    const courseName = clonedItem.querySelector('.course-name').textContent.trim();
+                    
+                    // 移除所有课程颜色类
+                    clonedItem.classList.remove('course-math', 'course-english', 'course-cs', 'course-physics', 'course-programming', 'course-new');
+                    
+                    // 根据课程名称添加相应的颜色类
+                    if (courseName === '高等数学') {
+                        clonedItem.classList.add('course-math');
+                    } else if (courseName === '大学英语') {
+                        clonedItem.classList.add('course-english');
+                    } else if (courseName === '计算机基础') {
+                        clonedItem.classList.add('course-cs');
+                    } else if (courseName === '物理学') {
+                        clonedItem.classList.add('course-physics');
+                    } else if (courseName === '程序设计') {
+                        clonedItem.classList.add('course-programming');
+                    } else {
+                        clonedItem.classList.add('course-new');
+                    }
+                    
+                    this.appendChild(clonedItem);
+                    
+                    // 为新添加的元素添加拖拽事件
+                    clonedItem.addEventListener('dragstart', function() {
+                        draggedItem = this;
+                        setTimeout(() => {
+                            this.style.opacity = '0.5';
+                        }, 0);
+                    });
+                    
+                    clonedItem.addEventListener('dragend', function() {
+                        this.style.opacity = '1';
+                        draggedItem = null;
+                    });
+                });
+            });
+
+            // 新增：创建新课程交互
+            const saveNewCourseBtn = document.getElementById('saveNewCourseBtn');
+            const newCourseNameInput = document.getElementById('newCourseName');
+            const draggableCourses = document.getElementById('draggableCourses');
+
+            // 新建课程颜色循环
+            const colorClasses = ['course-math', 'course-english', 'course-cs', 'course-physics', 'course-programming'];
+            let newCourseColorIdx = 0;
+
+            saveNewCourseBtn.addEventListener('click', () => {
+                const name = newCourseNameInput.value.trim();
+                if (!name) return;
+                // 创建新课程卡片
+                const div = document.createElement('div');
+                div.className = 'course-item';
+                // 分配颜色
+                const colorClass = colorClasses[newCourseColorIdx % colorClasses.length];
+                div.classList.add(colorClass);
+                newCourseColorIdx++;
+                div.innerHTML = `<div class="course-name"></div>`;
+                div.querySelector('.course-name').textContent = name;
+                div.setAttribute('draggable', 'true');
+                // 拖拽事件
+                div.addEventListener('dragstart', function() {
+                    draggedItem = this;
+                    setTimeout(() => {
+                        this.style.opacity = '0.5';
+                    }, 0);
+                });
+                div.addEventListener('dragend', function() {
+                    this.style.opacity = '1';
+                    draggedItem = null;
+                });
+                draggableCourses.appendChild(div);
+                newCourseNameInput.value = '';
+            });
+        });
+    </script>
+</body>
+</html> 
