@@ -15,6 +15,7 @@ import {
   AlertDialogCancel,
 } from './alert-dialog';
 import { useDraggable } from '@dnd-kit/core';
+import { getCourseColorClasses } from '@/lib/utils';
 
 export type CourseItems = Array<{
   courseName: string;
@@ -86,7 +87,7 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mo
               ref={setNodeRef}
               {...attributes}
               {...listeners}
-              className={`group relative course-item px-3 py-2 rounded select-none flex items-center justify-between transition-shadow ${isDragging ? 'ring-2 ring-blue-400 shadow-lg opacity-80' : ''}`}
+              className={`group relative course-item px-3 py-2 rounded select-none flex items-center justify-between transition-shadow ${getCourseColorClasses(course.courseName)} ${isDragging ? 'ring-2 ring-blue-400 shadow-lg opacity-80' : ''}`}
               style={{ cursor: 'grab', opacity: isDragging ? 0.5 : 1 }}
             >
               <span className="font-medium">{course.courseName}</span>

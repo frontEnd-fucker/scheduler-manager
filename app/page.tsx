@@ -3,6 +3,7 @@ import { DndContext, DragEndEvent, DragOverlay } from "@dnd-kit/core";
 import { useState } from "react";
 import { Course, CourseTable } from "@/components/ui/CourseTable";
 import DraggableCourses, { CourseItems } from "@/components/ui/DraggableCourses";
+import { getCourseColorClasses } from "@/lib/utils";
 
 export default function Home() {
   // 课程表数据
@@ -58,7 +59,7 @@ export default function Home() {
           if (!course) return null;
           return (
             <div
-              className={`px-3 py-2 rounded select-none flex items-center justify-between shadow-lg`}
+              className={`px-3 py-2 rounded select-none flex items-center justify-between shadow-lg ${getCourseColorClasses(course.courseName)}`}
               style={{ minWidth: 100 }}
             >
               <span className="font-medium">{course.courseName}</span>

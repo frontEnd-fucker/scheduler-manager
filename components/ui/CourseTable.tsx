@@ -1,5 +1,6 @@
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
+import { getCourseColorClasses } from "@/lib/utils";
 
 export interface Course {
   id: string;
@@ -86,7 +87,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                   {course ? (
                     <div className="w-full h-full p-1 flex items-center justify-center">
                       <div
-                        className={"group relative course-item px-4 py-3 select-none flex items-center justify-between w-full h-full border-l-4 bg-gray-100 border-gray-300 rounded-r-sm"}
+                        className={`group relative course-item px-4 py-3 select-none flex items-center justify-between w-full h-full ${getCourseColorClasses(course.name)} rounded-r-sm`}
                         draggable
                         // onDragStart/onDragEnd handlers can be added here
                       >
