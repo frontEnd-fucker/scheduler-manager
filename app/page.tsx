@@ -7,9 +7,9 @@ import { getCourseColorClasses } from "@/lib/utils";
 
 export default function Home() {
   // 课程表数据
-  const [courses, setCourses] = useState<Course[]>(defaultCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
   // 可拖拽课程项
-  const [courseItems, setCourseItems] = useState<CourseItems>(defaultCourseItems);
+  const [courseItems, setCourseItems] = useState<CourseItems>([]);
   // 当前拖拽的课程id
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -92,27 +92,6 @@ export default function Home() {
     </DndContext>
   );
 }
-
-// 默认课程表数据
-const defaultCourses: Course[] = [
-  { id: '1', name: '高等数学', dayOfWeek: 1, timeSlotId: 1, startTime: '08:00', endTime: '09:30' },
-  { id: '2', name: '大学英语', dayOfWeek: 1, timeSlotId: 2, startTime: '09:30', endTime: '11:00' },
-  { id: '3', name: '线性代数', dayOfWeek: 2, timeSlotId: 3, startTime: '11:10', endTime: '12:40' },
-  { id: '4', name: '计算机基础', dayOfWeek: 2, timeSlotId: 4, startTime: '12:40', endTime: '14:10' },
-  { id: '5', name: '物理实验', dayOfWeek: 3, timeSlotId: 5, startTime: '14:30', endTime: '16:00' },
-  { id: '6', name: '程序设计', dayOfWeek: 3, timeSlotId: 6, startTime: '16:10', endTime: '17:40' },
-  { id: '7', name: '大学物理', dayOfWeek: 4, timeSlotId: 1, startTime: '08:00', endTime: '09:30' },
-  { id: '8', name: '思想政治', dayOfWeek: 4, timeSlotId: 2, startTime: '09:30', endTime: '11:00' },
-];
-
-// 默认可拖拽课程项
-const defaultCourseItems: CourseItems = [
-  { courseName: '高等数学', courseNameId: 1, isUsed: true },
-  { courseName: '大学英语', courseNameId: 2, isUsed: false },
-  { courseName: '计算机基础', courseNameId: 3, isUsed: false },
-  { courseName: '物理学', courseNameId: 4, isUsed: false },
-  { courseName: '程序设计', courseNameId: 5, isUsed: true },
-];
 
 const timeSlots = [
   { id: 1, start: '08:00', end: '09:30' },
