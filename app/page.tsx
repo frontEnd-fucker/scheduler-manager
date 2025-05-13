@@ -39,6 +39,24 @@ export default function Home() {
     ]);
   };
 
+  // 处理添加新课程
+  const handleAddCourse = (newCourse: { courseName: string; courseNameId: number }) => {
+    setCourseItems((prev) => [...prev, newCourse]);
+  };
+
+  // 处理删除课程
+  const handleDeleteCourse = (courseId: number) => {
+    // 更新可拖拽课程列表
+    setCourseItems((prev) => prev.filter((c) => c.courseNameId !== courseId));
+    
+    // 获取被删除的课程名称
+    const deletedCourse = courseItems.find(c => c.courseNameId === courseId);
+    if (deletedCourse) {
+      // 同时从课程表中删除该课程（如果存在）
+      setCourses(prev => prev.filter(c => c.name !== deletedCourse.courseName));
+    }
+  };
+
   return (
     <DndContext
       onDragStart={event => setActiveId(Number(event.active.id))}
@@ -47,7 +65,11 @@ export default function Home() {
     >
       <div className="flex flex-col md:flex-row gap-4">
         <div>
-          <DraggableCourses courses={courseItems} />
+          <DraggableCourses 
+            courses={courseItems} 
+            onAddCourse={handleAddCourse} 
+            onDeleteCourse={handleDeleteCourse}
+          />
         </div>
         <div className="flex-1">
           <CourseTable courses={courses} timeSlots={timeSlots} className="md:max-w-4xl" />

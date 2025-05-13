@@ -56,7 +56,12 @@ const DraggableCourseItem = ({
       <button
         type="button"
         className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 hover:cursor-pointer"
-        onClick={() => onDeleteClick(course)}
+        onClick={(e) => {
+          onDeleteClick(course);
+        }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+        }}
         tabIndex={-1}
         aria-label="删除课程"
       >
@@ -69,10 +74,14 @@ const DraggableCourseItem = ({
 interface DraggableCoursesProps {
   courses?: CourseItems;
   onAddCourse?: (course: { courseName: string; courseNameId: number }) => void;
+  onDeleteCourse?: (courseId: number) => void;
 }
 
-export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mockCourses, onAddCourse }: DraggableCoursesProps) => {
-  const [courseList, setCourseList] = useState<CourseItems>(courses);
+export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ 
+  courses = mockCourses, 
+  onAddCourse, 
+  onDeleteCourse 
+}: DraggableCoursesProps) => {
   const [newCourseName, setNewCourseName] = useState('');
   const [error, setError] = useState('');
   const [pendingDelete, setPendingDelete] = useState<number|null>(null);
@@ -80,7 +89,7 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mo
   const handleAddCourse = () => {
     const name = newCourseName.trim();
     if (!name) return;
-    if (courseList.some((c: { courseName: string }) => c.courseName === name)) {
+    if (courses.some((c: { courseName: string }) => c.courseName === name)) {
       setError('不可添加重复课程');
       return;
     }
@@ -88,15 +97,14 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mo
       courseName: name,
       courseNameId: Date.now(),
     };
-    setCourseList((prev: CourseItems) => [...prev, newCourse]);
     setNewCourseName('');
     setError('');
     onAddCourse?.(newCourse);
   };
 
   const handleDelete = (courseId: number) => {
-    setCourseList((prev) => prev.filter((c) => c.courseNameId !== courseId));
     setPendingDelete(null);
+    onDeleteCourse?.(courseId);
   };
 
   const handleDeleteClick = (course: { courseNameId: number; isUsed?: boolean }) => {
@@ -111,7 +119,7 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mo
     <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 max-w-xs w-full">
       <h2 className="text-base font-semibold mb-2">可拖拽课程</h2>
       <div className="flex flex-col gap-2 mb-4" data-testid="draggable-courses-list">
-        {courseList.map((course) => (
+        {courses.map((course) => (
           <DraggableCourseItem 
             key={course.courseNameId}
             course={course}
@@ -147,7 +155,12 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mo
         </div>
       )}
       {/* 删除确认弹窗 */}
-      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+      <AlertDialog 
+        open={pendingDelete !== null} 
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除课程？</AlertDialogTitle>
@@ -157,7 +170,9 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ courses = mo
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingDelete(null)}>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(pendingDelete!)}>确认删除</AlertDialogAction>
+            <AlertDialogAction onClick={() => pendingDelete !== null && handleDelete(pendingDelete)}>
+              确认删除
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
