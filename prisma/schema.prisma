@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id         String       @id @default(cuid())
+  email      String       @unique
+  name       String?
+  courseTables CourseTable[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+// CourseTable model to store course tables
+model CourseTable {
+  id        String   @id @default(cuid())
+  name      String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  courses   Course[]
+  timeSlots TimeSlot[]
+  courseItems CourseItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Course model based on the frontend implementation
+model Course {
+  id         String   @id @default(cuid())
+  name       String
+  dayOfWeek  Int      // 1-5 representing Monday to Friday
+  timeSlot   TimeSlot  @relation(fields: [timeSlotId], references: [id])
+  timeSlotId Int
+  courseTable CourseTable @relation(fields: [courseTableId], references: [id], onDelete: Cascade)
+  courseTableId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([courseTableId])
+}
+
+// TimeSlot model to store the available time slots
+model TimeSlot {
+  id      Int    @id @default(autoincrement())
+  start   DateTime // Timestamp for start time
+  end     DateTime // Timestamp for end time
+  order   Int    // For sorting time slots in the correct order
+  courseTable CourseTable @relation(fields: [courseTableId], references: [id], onDelete: Cascade)
+  courseTableId String
+  courses Course[]
+
+  @@index([courseTableId])
+}
+
+// CourseItem model for the draggable course items
+model CourseItem {
+  id         String  @id @default(cuid())
+  courseName String  @unique
+  isUsed     Boolean @default(false)
+  courseTable CourseTable @relation(fields: [courseTableId], references: [id], onDelete: Cascade)
+  courseTableId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([courseTableId])
+} 
