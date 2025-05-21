@@ -6,6 +6,7 @@ import DraggableCourses, { CourseItems } from "@/components/ui/DraggableCourses"
 import { getCourseColorClasses } from "@/lib/utils";
 import { useCourseTable } from "./hooks/useCourseTable";
 import { useCreateCourse, useCreateCourseItem, useDeleteCourseItem } from "./hooks/useCourseActions";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Mock user ID - In a real app, this would come from authentication
 const MOCK_USER_ID = "user_123456789";
@@ -15,6 +16,7 @@ const MOCK_TABLE_ID = "table_123456789";
 export default function Home() {
   // Current dragged course id
   const [activeId, setActiveId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Fetch course table data using React Query
   const { 
@@ -44,6 +46,28 @@ export default function Home() {
     // Check if there's already a course in this cell
     if (data.courses.some((c) => c.dayOfWeek === dayOfWeek && c.timeSlotId === timeSlotId)) return;
     
+    // 创建乐观更新的临时ID
+    const optimisticId = `temp-${Date.now()}`;
+    
+    // 创建乐观更新的课程对象
+    const optimisticCourse = {
+      id: optimisticId,
+      name: draggedCourseItem.courseName,
+      dayOfWeek: dayOfWeek as 1 | 2 | 3 | 4 | 5,
+      timeSlotId,
+      startTime: '',
+      endTime: ''
+    };
+    
+    // 使用QueryClient立即更新缓存
+    queryClient.setQueryData(['courseTable', MOCK_TABLE_ID, MOCK_USER_ID], (oldData: any) => {
+      if (!oldData) return oldData;
+      return {
+        ...oldData,
+        courses: [...oldData.courses, optimisticCourse]
+      };
+    });
+    
     try {
       // Create new course using mutation
       createCourseMutation.mutate({
@@ -54,6 +78,14 @@ export default function Home() {
         userId: MOCK_USER_ID
       });
     } catch (err) {
+      // 如果失败，回滚乐观更新
+      queryClient.setQueryData(['courseTable', MOCK_TABLE_ID, MOCK_USER_ID], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          courses: oldData.courses.filter((c: any) => c.id !== optimisticId)
+        };
+      });
       console.error("Error creating course:", err);
     }
   };
