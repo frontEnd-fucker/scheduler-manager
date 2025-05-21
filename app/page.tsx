@@ -14,7 +14,7 @@ const MOCK_TABLE_ID = "table_123456789";
 
 export default function Home() {
   // Current dragged course id
-  const [activeId, setActiveId] = useState<number | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   // Fetch course table data using React Query
   const { 
@@ -37,7 +37,7 @@ export default function Home() {
     // over.id: cell id, format: day-timeSlot
     // active.id: course item id
     const [dayOfWeek, timeSlotId] = (over.id as string).split("-").map(Number);
-    const draggedCourseItem = data.courseItems.find((c) => c.courseNameId === active.id);
+    const draggedCourseItem = data.courseItems.find((c) => c.id === active.id);
     
     if (!draggedCourseItem) return;
     
@@ -59,7 +59,7 @@ export default function Home() {
   };
 
   // Add new course handler
-  const handleAddCourse = async (newCourse: { courseName: string; courseNameId: number }) => {
+  const handleAddCourse = async (newCourse: { courseName: string; id: string }) => {
     try {
       // Create new course item using mutation
       createCourseItemMutation.mutate({
@@ -73,12 +73,12 @@ export default function Home() {
   };
 
   // Delete course handler
-  const handleDeleteCourse = async (courseId: number) => {
+  const handleDeleteCourse = async (courseId: string) => {
     try {
       // Delete course item using mutation
       deleteCourseItemMutation.mutate({
         tableId: MOCK_TABLE_ID,
-        courseId: courseId.toString(),
+        courseId: courseId,
         userId: MOCK_USER_ID
       });
     } catch (err) {
@@ -99,7 +99,7 @@ export default function Home() {
 
   return (
     <DndContext
-      onDragStart={event => setActiveId(Number(event.active.id))}
+      onDragStart={event => setActiveId(event.active.id as string)}
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
@@ -117,7 +117,7 @@ export default function Home() {
       </div>
       <DragOverlay>
         {activeId != null ? (() => {
-          const course = data.courseItems.find(c => c.courseNameId === activeId);
+          const course = data.courseItems.find(c => c.id === activeId);
           if (!course) return null;
           return (
             <div

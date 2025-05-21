@@ -13,7 +13,7 @@ export interface TimeSlot {
 
 export interface CourseItem {
   courseName: string
-  courseNameId: number
+  id: string
   isUsed: boolean
 }
 
@@ -39,11 +39,11 @@ export function useCourseTable(tableId: string, userId: string) {
         end: formatTime(slot.end)
       }))
       
-      // const formattedCourseItems = courseTable.courseItems.map(item => ({
-      //   courseName: item.courseName,
-      //   courseNameId: parseInt(item.id),
-      //   isUsed: item.isUsed
-      // }))
+      const formattedCourseItems = courseTable.courseItems.map(item => ({
+        courseName: item.courseName,
+        id: item.id,
+        isUsed: item.isUsed
+      }))
       
       const formattedCourses = courseTable.courses.map(course => ({
         id: course.id,
@@ -56,7 +56,7 @@ export function useCourseTable(tableId: string, userId: string) {
       
       return {
         timeSlots: formattedTimeSlots,
-        courseItems: courseTable.courseItems, 
+        courseItems: formattedCourseItems, 
         courses: formattedCourses
       }
     }
