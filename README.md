@@ -1,63 +1,145 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Course Manager
+
+A Next.js application for managing course schedules with drag-and-drop functionality.
+
+## Features
+
+- Create and manage course tables
+- Add and remove courses
+- Drag and drop courses onto a weekly schedule
+- View course schedule in a weekly format
+- Automatic time slot management
+- Data persistence with PostgreSQL
+- TanStack Query for efficient client-side data fetching
+
+## Tech Stack
+
+- **Frontend**: Next.js, React, Tailwind CSS, shadcn/ui, DnD Kit
+- **Backend**: Next.js API Routes, Server Actions
+- **Database**: PostgreSQL with Prisma ORM
+- **State Management**: TanStack Query for server state
+- **Authentication**: Simple middleware (mock implementation)
+
+## Prerequisites
+
+- Node.js (v18 or later)
+- PostgreSQL database
+- npm or yarn
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/yourusername/course-manager.git
+cd course-manager
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+# or
+yarn install
+```
+
+### 3. Set up environment variables
+
+Create a `.env` file in the root directory with the following content:
+
+```
+DATABASE_URL="postgresql://username:password@localhost:5432/course_manager?schema=public"
+```
+
+Replace `username`, `password` with your PostgreSQL credentials.
+
+### 4. Set up the database
+
+```bash
+# Generate Prisma client
+npm run prisma:generate
+
+# Push the schema to your database
+npm run prisma:push
+
+# Seed the database with initial data
+npm run prisma:seed
+```
+
+### 5. Start the development server
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `app/` - Next.js App Router
+- `components/` - React components
+- `lib/` - Utility functions and Prisma client
+- `prisma/` - Prisma schema and seed script
+- `app/actions/` - Server actions for data mutations
+- `app/api/` - API routes
+- `app/hooks/` - React Query hooks for data fetching
 
-## Learn More
+## API Routes
 
-To learn more about Next.js, take a look at the following resources:
+- `GET /api/course-tables` - Get all course tables
+- `POST /api/course-tables` - Create a new course table
+- `GET /api/course-tables/:id` - Get a specific course table
+- `PUT /api/course-tables/:id` - Update a course table
+- `DELETE /api/course-tables/:id` - Delete a course table
+- `GET /api/course-tables/:id/courses` - Get all courses for a table
+- `POST /api/course-tables/:id/courses` - Add a course to a table
+- `GET /api/course-tables/:id/courses/:courseId` - Get a specific course
+- `PUT /api/course-tables/:id/courses/:courseId` - Update a course
+- `DELETE /api/course-tables/:id/courses/:courseId` - Delete a course
+- `GET /api/course-tables/:id/course-items` - Get all course items
+- `POST /api/course-tables/:id/course-items` - Create a course item
+- `GET /api/course-tables/:id/course-items/:itemId` - Get a specific course item
+- `PUT /api/course-tables/:id/course-items/:itemId` - Update a course item
+- `DELETE /api/course-tables/:id/course-items/:itemId` - Delete a course item
+- `GET /api/course-tables/:id/time-slots` - Get all time slots
+- `POST /api/course-tables/:id/time-slots` - Create a time slot
+- `GET /api/course-tables/:id/time-slots/:slotId` - Get a specific time slot
+- `PUT /api/course-tables/:id/time-slots/:slotId` - Update a time slot
+- `DELETE /api/course-tables/:id/time-slots/:slotId` - Delete a time slot
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Server Actions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `getCourseTablesForUser` - Get all course tables for a user
+- `getCourseTable` - Get a specific course table
+- `createCourseTable` - Create a new course table
+- `updateCourseTable` - Update a course table
+- `deleteCourseTable` - Delete a course table
+- `getCoursesForTable` - Get all courses for a table
+- `createCourse` - Create a new course
+- `updateCourse` - Update a course
+- `deleteCourse` - Delete a course
+- `getCourseItemsForTable` - Get all course items for a table
+- `createCourseItem` - Create a new course item
+- `updateCourseItem` - Update a course item
+- `deleteCourseItem` - Delete a course item
+- `getTimeSlotsForTable` - Get all time slots for a table
+- `createTimeSlot` - Create a new time slot
+- `updateTimeSlot` - Update a time slot
+- `deleteTimeSlot` - Delete a time slot
 
-## Deploy on Vercel
+## React Query Hooks
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `useCourseTable` - Fetch and cache course table data
+- `useCreateCourse` - Mutation for creating courses
+- `useCreateCourseItem` - Mutation for creating course items
+- `useDeleteCourseItem` - Mutation for deleting course items
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Authentication
 
-## Neon Postgres (Vercel Native) 数据库设置
+This project uses a simple middleware to simulate authentication. In a production environment, you should replace it with a proper authentication solution like NextAuth.js or Auth0.
 
-本项目使用 [Neon Postgres](https://neon.tech/) 作为数据库，并通过 Vercel Storage 原生集成。
+## License
 
-1. 登录 [Vercel 控制台](https://vercel.com/dashboard)，进入你的项目。
-2. 点击左侧菜单 Storage → Postgres，选择 Neon，创建数据库。
-3. 创建完成后，Vercel 会自动为你的项目注入 `POSTGRES_PRISMA_URL` 环境变量。
-4. 在本地开发时，进入 Vercel 控制台数据库详情页，点击 Connect，复制 Prisma 连接字符串，粘贴到 `.env` 文件的 `DATABASE_URL`。
-   ```env
-   DATABASE_URL="postgresql://user:password@ep-xxxxxx.us-east-2.aws.neon.tech/dbname?sslmode=require"
-   ```
-5. 运行以下命令同步数据库结构：
-   ```bash
-   npm run prisma:generate
-   npm run prisma:push
-   # 或使用迁移
-   npm run prisma:migrate --name init
-   ```
-
-## 开发
-
-数据库配置好后，启动开发服务器：
-
-```bash
-npm run dev
-```
+MIT

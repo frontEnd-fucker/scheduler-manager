@@ -19,29 +19,20 @@ import { getCourseColorClasses } from '@/lib/utils';
 
 export type CourseItems = Array<{
   courseName: string;
-  courseNameId: number;
+  id: string;
   isUsed?: boolean;
 }>;
-
-// 假数据
-const mockCourses: CourseItems = [
-  { courseName: '高等数学', courseNameId: 1, isUsed: true },
-  { courseName: '大学英语', courseNameId: 2, isUsed: false },
-  { courseName: '计算机基础', courseNameId: 3, isUsed: false },
-  { courseName: '物理学', courseNameId: 4, isUsed: false },
-  { courseName: '程序设计', courseNameId: 5, isUsed: true },
-];
 
 // 创建单独的可拖拽课程项组件
 const DraggableCourseItem = ({ 
   course, 
   onDeleteClick 
 }: { 
-  course: { courseName: string; courseNameId: number; isUsed?: boolean };
-  onDeleteClick: (course: { courseNameId: number; isUsed?: boolean }) => void;
+  course: { courseName: string; id: string; isUsed?: boolean };
+  onDeleteClick: (course: { id: string; isUsed?: boolean }) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: course.courseNameId,
+    id: course.id,
   });
 
   return (
@@ -72,19 +63,19 @@ const DraggableCourseItem = ({
 };
 
 interface DraggableCoursesProps {
-  courses?: CourseItems;
-  onAddCourse?: (course: { courseName: string; courseNameId: number }) => void;
-  onDeleteCourse?: (courseId: number) => void;
+  courses: CourseItems;
+  onAddCourse?: (course: { courseName: string; id: string }) => void;
+  onDeleteCourse?: (courseId: string) => void;
 }
 
 export const DraggableCourses: React.FC<DraggableCoursesProps> = ({ 
-  courses = mockCourses, 
+  courses, 
   onAddCourse, 
   onDeleteCourse 
 }: DraggableCoursesProps) => {
   const [newCourseName, setNewCourseName] = useState('');
   const [error, setError] = useState('');
-  const [pendingDelete, setPendingDelete] = useState<number|null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string|null>(null);
 
   const handleAddCourse = () => {
     const name = newCourseName.trim();
@@ -95,23 +86,23 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({
     }
     const newCourse = {
       courseName: name,
-      courseNameId: Date.now(),
+      id: Date.now().toString(),
     };
     setNewCourseName('');
     setError('');
     onAddCourse?.(newCourse);
   };
 
-  const handleDelete = (courseId: number) => {
+  const handleDelete = (courseId: string) => {
     setPendingDelete(null);
     onDeleteCourse?.(courseId);
   };
 
-  const handleDeleteClick = (course: { courseNameId: number; isUsed?: boolean }) => {
+  const handleDeleteClick = (course: { id: string; isUsed?: boolean }) => {
     if (course.isUsed) {
-      setPendingDelete(course.courseNameId);
+      setPendingDelete(course.id);
     } else {
-      handleDelete(course.courseNameId);
+      handleDelete(course.id);
     }
   };
 
@@ -121,7 +112,7 @@ export const DraggableCourses: React.FC<DraggableCoursesProps> = ({
       <div className="flex flex-col gap-2 mb-4" data-testid="draggable-courses-list">
         {courses.map((course) => (
           <DraggableCourseItem 
-            key={course.courseNameId}
+            key={course.id}
             course={course}
             onDeleteClick={handleDeleteClick}
           />

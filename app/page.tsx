@@ -4,58 +4,98 @@ import { useState } from "react";
 import { Course, CourseTable } from "@/components/ui/CourseTable";
 import DraggableCourses, { CourseItems } from "@/components/ui/DraggableCourses";
 import { getCourseColorClasses } from "@/lib/utils";
+import { useCourseTable } from "./hooks/useCourseTable";
+import { useCreateCourse, useCreateCourseItem, useDeleteCourseItem } from "./hooks/useCourseActions";
+
+// Mock user ID - In a real app, this would come from authentication
+const MOCK_USER_ID = "user_123456789";
+// Mock course table ID - In a real app, this would be selected by the user
+const MOCK_TABLE_ID = "table_123456789";
 
 export default function Home() {
-  // 课程表数据
-  const [courses, setCourses] = useState<Course[]>([]);
-  // 可拖拽课程项
-  const [courseItems, setCourseItems] = useState<CourseItems>([]);
-  // 当前拖拽的课程id
+  // Current dragged course id
   const [activeId, setActiveId] = useState<number | null>(null);
 
-  // 拖拽结束时处理
-  const handleDragEnd = (event: DragEndEvent) => {
+  // Fetch course table data using React Query
+  const { 
+    data, 
+    isLoading, 
+    error: queryError,
+  } = useCourseTable(MOCK_TABLE_ID, MOCK_USER_ID);
+
+  // Mutations
+  const createCourseMutation = useCreateCourse();
+  const createCourseItemMutation = useCreateCourseItem();
+  const deleteCourseItemMutation = useDeleteCourseItem();
+
+  // Drag end handler
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
-    if (!over) return;
-    // over.id: 格子id，格式 day-timeSlot
-    // active.id: 课程项id
-    const [dayOfWeek, timeSlotId] = (over.id as string).split("-").map(Number);
-    const draggedCourse = courseItems.find((c) => c.courseNameId === Number(active.id));
-    if (!draggedCourse) return;
-    // 检查该格子是否已有课程
-    if (courses.some((c) => c.dayOfWeek === dayOfWeek && c.timeSlotId === timeSlotId)) return;
-    // 生成新课程
-    setCourses([
-      ...courses,
-      {
-        id: Date.now().toString(),
-        name: draggedCourse.courseName,
-        dayOfWeek: dayOfWeek as 1 | 2 | 3 | 4 | 5,
-        timeSlotId,
-        startTime: "",
-        endTime: "",
-      },
-    ]);
-  };
-
-  // 处理添加新课程
-  const handleAddCourse = (newCourse: { courseName: string; courseNameId: number }) => {
-    setCourseItems((prev) => [...prev, newCourse]);
-  };
-
-  // 处理删除课程
-  const handleDeleteCourse = (courseId: number) => {
-    // 更新可拖拽课程列表
-    setCourseItems((prev) => prev.filter((c) => c.courseNameId !== courseId));
+    if (!over || !data) return;
     
-    // 获取被删除的课程名称
-    const deletedCourse = courseItems.find(c => c.courseNameId === courseId);
-    if (deletedCourse) {
-      // 同时从课程表中删除该课程（如果存在）
-      setCourses(prev => prev.filter(c => c.name !== deletedCourse.courseName));
+    // over.id: cell id, format: day-timeSlot
+    // active.id: course item id
+    const [dayOfWeek, timeSlotId] = (over.id as string).split("-").map(Number);
+    const draggedCourseItem = data.courseItems.find((c) => c.courseNameId === active.id);
+    
+    if (!draggedCourseItem) return;
+    
+    // Check if there's already a course in this cell
+    if (data.courses.some((c) => c.dayOfWeek === dayOfWeek && c.timeSlotId === timeSlotId)) return;
+    
+    try {
+      // Create new course using mutation
+      createCourseMutation.mutate({
+        tableId: MOCK_TABLE_ID,
+        name: draggedCourseItem.courseName,
+        dayOfWeek,
+        timeSlotId,
+        userId: MOCK_USER_ID
+      });
+    } catch (err) {
+      console.error("Error creating course:", err);
     }
   };
+
+  // Add new course handler
+  const handleAddCourse = async (newCourse: { courseName: string; courseNameId: number }) => {
+    try {
+      // Create new course item using mutation
+      createCourseItemMutation.mutate({
+        tableId: MOCK_TABLE_ID,
+        courseName: newCourse.courseName,
+        userId: MOCK_USER_ID
+      });
+    } catch (err) {
+      console.error("Error adding course:", err);
+    }
+  };
+
+  // Delete course handler
+  const handleDeleteCourse = async (courseId: number) => {
+    try {
+      // Delete course item using mutation
+      deleteCourseItemMutation.mutate({
+        tableId: MOCK_TABLE_ID,
+        courseId: courseId.toString(),
+        userId: MOCK_USER_ID
+      });
+    } catch (err) {
+      console.error("Error deleting course:", err);
+    }
+  };
+
+  // Handle loading and error states
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
+
+  if (queryError || !data) {
+    return <div className="flex justify-center items-center h-screen text-red-500">
+      {queryError instanceof Error ? queryError.message : "Failed to load course data. Please try again."}
+    </div>;
+  }
 
   return (
     <DndContext
@@ -66,18 +106,18 @@ export default function Home() {
       <div className="flex flex-col md:flex-row gap-4">
         <div>
           <DraggableCourses 
-            courses={courseItems} 
+            courses={data.courseItems} 
             onAddCourse={handleAddCourse} 
             onDeleteCourse={handleDeleteCourse}
           />
         </div>
         <div className="flex-1">
-          <CourseTable courses={courses} timeSlots={timeSlots} className="md:max-w-4xl" />
+          <CourseTable courses={data.courses} timeSlots={data.timeSlots} className="md:max-w-4xl" />
         </div>
       </div>
       <DragOverlay>
         {activeId != null ? (() => {
-          const course = courseItems.find(c => c.courseNameId === activeId);
+          const course = data.courseItems.find(c => c.courseNameId === activeId);
           if (!course) return null;
           return (
             <div
