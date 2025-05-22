@@ -1,6 +1,6 @@
 "use client";
 import { DndContext, DragEndEvent, DragOverlay } from "@dnd-kit/core";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Course, CourseTable } from "@/components/ui/CourseTable";
 import DraggableCourses, { CourseItems } from "@/components/ui/DraggableCourses";
 import { getCourseColorClasses } from "@/lib/utils";
@@ -23,14 +23,20 @@ interface CourseSchedulerProps {
   tableId: string;
 }
 
-export function CourseScheduler({ courseItems, timeSlots, courses, tableId }: CourseSchedulerProps) {
-  // Initialize and hydrate query client
-  const queryClient = useQueryClient();
+export function CourseScheduler({ courseItems: initialCourseItems, timeSlots, courses: initialCourses, tableId }: CourseSchedulerProps) {
   
-  // Prefill the query cache with our server data
-  useState(() => {
-    queryClient.setQueryData(['courseTable', tableId], { timeSlots, courseItems, courses });
-  });
+  // 使用本地state维护courses和courseItems
+  const [localCourses, setLocalCourses] = useState<Course[]>(initialCourses);
+  const [localCourseItems, setLocalCourseItems] = useState<CourseItems>(initialCourseItems);
+  
+  // 当父组件传入的props变化时，更新本地state
+  useEffect(() => {
+    setLocalCourses(initialCourses);
+  }, [initialCourses]);
+  
+  useEffect(() => {
+    setLocalCourseItems(initialCourseItems);
+  }, [initialCourseItems]);
 
   // Mutations
   const createCourseMutation = useCreateCourse();
@@ -49,34 +55,31 @@ export function CourseScheduler({ courseItems, timeSlots, courses, tableId }: Co
     // over.id: cell id, format: day-timeSlot
     // active.id: course item id
     const [dayOfWeek, timeSlotId] = (over.id as string).split("-").map(Number);
-    const draggedCourseItem = courseItems.find((c) => c.id === active.id);
+    const draggedCourseItem = localCourseItems.find((c) => c.id === active.id);
     
     if (!draggedCourseItem) return;
     
     // Check if there's already a course in this cell
-    if (courses.some((c) => c.dayOfWeek === dayOfWeek && c.timeSlotId === timeSlotId)) return;
+    if (localCourses.some((c) => c.dayOfWeek === dayOfWeek && c.timeSlotId === timeSlotId)) return;
     
     // 创建乐观更新的临时ID
     const optimisticId = `temp-${Date.now()}`;
     
+    // 从timeSlots中获取对应的时间段
+    const timeSlot = timeSlots.find(ts => ts.id === timeSlotId);
+    
     // 创建乐观更新的课程对象
-    const optimisticCourse = {
+    const optimisticCourse: Course = {
       id: optimisticId,
       name: draggedCourseItem.courseName,
       dayOfWeek: dayOfWeek as 1 | 2 | 3 | 4 | 5,
       timeSlotId,
-      startTime: '',
-      endTime: ''
+      startTime: timeSlot ? timeSlot.start : new Date(),
+      endTime: timeSlot ? timeSlot.end : new Date()
     };
     
-    // 使用QueryClient立即更新缓存
-    queryClient.setQueryData(['courseTable', tableId], (oldData: any) => {
-      if (!oldData) return oldData;
-      return {
-        ...oldData,
-        courses: [...oldData.courses, optimisticCourse]
-      };
-    });
+    // 直接更新本地state实现乐观更新
+    setLocalCourses(prevCourses => [...prevCourses, optimisticCourse]);
     
     try {
       // Create new course using mutation
@@ -89,19 +92,19 @@ export function CourseScheduler({ courseItems, timeSlots, courses, tableId }: Co
       });
     } catch (err) {
       // 如果失败，回滚乐观更新
-      queryClient.setQueryData(['courseTable', tableId], (oldData: any) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          courses: oldData.courses.filter((c: any) => c.id !== optimisticId)
-        };
-      });
+      setLocalCourses(prevCourses => prevCourses.filter(c => c.id !== optimisticId));
       console.error("Error creating course:", err);
     }
   };
 
   // Add new course handler
   const handleAddCourse = async (newCourse: { courseName: string; id: string }) => {
+    // 乐观更新本地courseItems
+    setLocalCourseItems(prevItems => [...prevItems, { 
+      id: `temp-${Date.now()}`, 
+      courseName: newCourse.courseName 
+    }]);
+    
     try {
       // Create new course item using mutation
       createCourseItemMutation.mutate({
@@ -110,12 +113,23 @@ export function CourseScheduler({ courseItems, timeSlots, courses, tableId }: Co
         userId: MOCK_USER_ID
       });
     } catch (err) {
+      // 回滚乐观更新
+      setLocalCourseItems(prevItems => 
+        prevItems.filter(item => item.courseName !== newCourse.courseName)
+      );
       console.error("Error adding course:", err);
     }
   };
 
   // Delete course handler
   const handleDeleteCourse = async (courseId: string) => {
+    // 找到要删除的课程
+    const courseToDelete = localCourseItems.find(c => c.id === courseId);
+    if (!courseToDelete) return;
+    
+    // 乐观更新
+    setLocalCourseItems(prevItems => prevItems.filter(item => item.id !== courseId));
+    
     try {
       // Delete course item using mutation
       deleteCourseItemMutation.mutate({
@@ -124,6 +138,10 @@ export function CourseScheduler({ courseItems, timeSlots, courses, tableId }: Co
         userId: MOCK_USER_ID
       });
     } catch (err) {
+      // 回滚乐观更新
+      if (courseToDelete) {
+        setLocalCourseItems(prevItems => [...prevItems, courseToDelete]);
+      }
       console.error("Error deleting course:", err);
     }
   };
@@ -137,18 +155,18 @@ export function CourseScheduler({ courseItems, timeSlots, courses, tableId }: Co
       <div className="flex flex-col md:flex-row gap-4">
         <div>
           <DraggableCourses 
-            courses={courseItems} 
+            courses={localCourseItems} 
             onAddCourse={handleAddCourse} 
             onDeleteCourse={handleDeleteCourse}
           />
         </div>
         <div className="flex-1">
-          <CourseTable courses={courses} timeSlots={timeSlots} className="md:max-w-4xl" />
+          <CourseTable courses={localCourses} timeSlots={timeSlots} className="md:max-w-4xl" />
         </div>
       </div>
       <DragOverlay>
         {activeId != null ? (() => {
-          const course = courseItems.find(c => c.id === activeId);
+          const course = localCourseItems.find(c => c.id === activeId);
           if (!course) return null;
           return (
             <div
