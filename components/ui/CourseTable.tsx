@@ -5,16 +5,16 @@ import { getCourseColorClasses } from "@/lib/utils";
 export interface Course {
   id: string;
   name: string;
-  dayOfWeek: 1 | 2 | 3 | 4 | 5;
+  dayOfWeek: number;
   timeSlotId: number;
-  startTime: string;
-  endTime: string;
+  startTime: Date;
+  endTime: Date;
 }
 
 export interface TimeSlot {
   id: number;
-  start: string;
-  end: string;
+  start: Date;
+  end: Date;
 }
 
 export interface CourseTableProps {
@@ -111,9 +111,9 @@ export const CourseTable: React.FC<CourseTableProps> = ({
             {config.showTimeColumn && (
               <div className="bg-white p-2 text-xs text-gray-500 flex flex-col items-center justify-center border-r border-gray-100">
                 <p>
-                  <span>{slot.start}</span>
+                  <span>{slot.start.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
                   <span className="text-gray-300">-</span>
-                  <span>{slot.end}</span>
+                  <span>{slot.end.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
                 </p>
               </div>
             )}
