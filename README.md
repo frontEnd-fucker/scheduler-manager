@@ -162,6 +162,42 @@ For production, use Vercel's environment variables configuration:
 3. Add all required variables from your `.env.local` file
 4. Vercel will automatically use these in production
 
+#### 详细步骤
+
+1. **登录 Vercel 账户**：访问 [Vercel 官网](https://vercel.com) 并登录您的账户
+
+2. **选择您的项目**：在 Dashboard 中找到 course-manager 项目
+
+3. **访问环境变量设置**：
+   - 点击项目后进入项目详情页
+   - 在左侧边栏找到 "Settings" 选项
+   - 点击 "Environment Variables" 选项
+
+4. **添加环境变量**：
+   - 点击 "Add New" 按钮
+   - 输入变量名称（例如 `DATABASE_URL`）
+   - 输入变量值（您的实际数据库连接字符串）
+   - 选择环境（Production、Preview、Development）
+   - 点击 "Save" 按钮
+
+5. **验证变量添加**：
+   - 添加完所有变量后，您可以在列表中看到所有添加的变量
+   - 确保所有必要的变量都已添加
+
+6. **重新部署项目**：
+   - 环境变量更改需要重新部署才能生效
+   - 在项目概览页点击 "Redeploy" 按钮
+
+7. **验证环境变量生效**：
+   - 部署完成后，访问您的应用检查功能是否正常
+
+#### 注意事项
+
+- 环境变量在 Vercel 平台上是加密存储的
+- 可以为不同的环境（Production、Preview、Development）设置不同的值
+- 可以使用 Vercel CLI 添加环境变量：`vercel env add DATABASE_URL`
+- 敏感信息（如数据库密码）可以使用 Vercel 的 [环境变量加密功能](https://vercel.com/docs/environment-variables/security)
+
 This ensures sensitive data is never exposed in your codebase.
 
 ## License
