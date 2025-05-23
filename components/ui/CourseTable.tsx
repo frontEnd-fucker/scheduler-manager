@@ -20,8 +20,6 @@ export interface TimeSlot {
 export interface CourseTableProps {
   courses: Course[];
   timeSlots: TimeSlot[];
-  onCourseAdd?: (course: Omit<Course, "id">) => void;
-  onCourseUpdate?: (course: Course) => void;
   onCourseDelete?: (courseId: string) => void;
   config?: {
     showTimeColumn?: boolean;
@@ -85,8 +83,6 @@ const DroppableCell = ({
 export const CourseTable: React.FC<CourseTableProps> = ({
   courses,
   timeSlots,
-  onCourseAdd,
-  onCourseUpdate,
   onCourseDelete,
   config = { showTimeColumn: true, showLunchBreak: true },
   className = "",

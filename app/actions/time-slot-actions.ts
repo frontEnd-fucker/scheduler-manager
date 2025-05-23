@@ -176,7 +176,11 @@ export async function updateTimeSlot(
     }
 
     // Prepare the update data
-    const updateData: any = {};
+    const updateData: {
+      order?: number;
+      start?: Date;
+      end?: Date;
+    } = {};
 
     if (validation.data.order) {
       updateData.order = validation.data.order;

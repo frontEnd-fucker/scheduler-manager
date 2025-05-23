@@ -5,7 +5,6 @@ import { Course, CourseTable } from "@/components/ui/CourseTable";
 import DraggableCourses, { CourseItems } from "@/components/ui/DraggableCourses";
 import { getCourseColorClasses } from "@/lib/utils";
 import { useCreateCourse, useCreateCourseItem, useDeleteCourseItem } from "@/app/hooks/useCourseActions";
-import { useQueryClient, HydrationBoundary, dehydrate, QueryClient } from "@tanstack/react-query";
 
 interface TimeSlot {
   id: number;

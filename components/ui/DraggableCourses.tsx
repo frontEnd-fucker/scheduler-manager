@@ -5,7 +5,6 @@ import { Input } from './input';
 import { Button } from './button';
 import {
   AlertDialog,
-  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogFooter,
@@ -47,7 +46,7 @@ const DraggableCourseItem = ({
       <button
         type="button"
         className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 hover:cursor-pointer"
-        onClick={(e) => {
+        onClick={() => {
           onDeleteClick(course);
         }}
         onPointerDown={(e) => {

@@ -12,16 +12,6 @@ const CourseTableSchema = z.object({
   name: z.string().min(1, "Course table name is required"),
 });
 
-const CourseSchema = z.object({
-  name: z.string().min(1, "Course name is required"),
-  dayOfWeek: z.number().min(1).max(5),
-  timeSlotId: z.number().int().positive(),
-});
-
-const CourseItemSchema = z.object({
-  courseName: z.string().min(1, "Course name is required"),
-});
-
 // Get all course tables for the current user
 export async function getCourseTablesForUser(userId: string) {
   if (!userId) {

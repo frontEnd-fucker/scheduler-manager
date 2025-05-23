@@ -3,7 +3,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createCourse } from '@/app/actions/course-actions'
 import { createCourseItem, deleteCourseItem } from '@/app/actions/course-item-actions'
-import { CourseData, CourseItem } from './useCourseTable'
 
 export function useCreateCourse() {
   const queryClient = useQueryClient()
