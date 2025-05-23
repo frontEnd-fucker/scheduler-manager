@@ -140,6 +140,30 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 
 This project uses a simple middleware to simulate authentication. In a production environment, you should replace it with a proper authentication solution like NextAuth.js or Auth0.
 
+## Environment Variables Setup
+
+For security reasons, sensitive environment variables are not stored in version control. The repository includes:
+
+- `.env` with placeholder values (safe for version control)
+- `.env.local` with actual development credentials (not committed to version control)
+
+### Development Setup
+
+1. Create a `.env.local` file with your actual credentials for local development
+2. This file will override values in `.env`
+3. Never commit `.env.local` to version control
+
+### Production Setup
+
+For production, use Vercel's environment variables configuration:
+
+1. Go to your Vercel project dashboard
+2. Navigate to Settings > Environment Variables
+3. Add all required variables from your `.env.local` file
+4. Vercel will automatically use these in production
+
+This ensures sensitive data is never exposed in your codebase.
+
 ## License
 
 MIT
