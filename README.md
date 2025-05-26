@@ -1,9 +1,10 @@
 # Course Manager
 
-A Next.js application for managing course schedules with drag-and-drop functionality.
+A Next.js application for managing course schedules with drag-and-drop functionality and user authentication.
 
 ## Features
 
+- User authentication with Clerk
 - Create and manage course tables
 - Add and remove courses
 - Drag and drop courses onto a weekly schedule
@@ -18,12 +19,13 @@ A Next.js application for managing course schedules with drag-and-drop functiona
 - **Backend**: Next.js API Routes, Server Actions
 - **Database**: PostgreSQL with Prisma ORM
 - **State Management**: TanStack Query for server state
-- **Authentication**: Simple middleware (mock implementation)
+- **Authentication**: Clerk
 
 ## Prerequisites
 
 - Node.js (v18 or later)
 - PostgreSQL database
+- Clerk account for authentication
 - npm or yarn
 
 ## Getting Started
@@ -43,17 +45,35 @@ npm install
 yarn install
 ```
 
-### 3. Set up environment variables
+### 3. Set up Clerk Authentication
 
-Create a `.env` file in the root directory with the following content:
+1. Create a Clerk account at [clerk.com](https://clerk.com)
+2. Create a new application in your Clerk dashboard
+3. Copy your Clerk keys from the dashboard
+
+### 4. Set up environment variables
+
+Create a `.env.local` file in the root directory with the following content:
 
 ```
+# Database
 DATABASE_URL="postgresql://username:password@localhost:5432/course_manager?schema=public"
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
+CLERK_SECRET_KEY=your_clerk_secret_key_here
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 ```
 
-Replace `username`, `password` with your PostgreSQL credentials.
+Replace the placeholders with your actual values:
+- `username`, `password` with your PostgreSQL credentials
+- `your_clerk_publishable_key_here` with your Clerk publishable key
+- `your_clerk_secret_key_here` with your Clerk secret key
 
-### 4. Set up the database
+### 5. Set up the database
 
 ```bash
 # Generate Prisma client
@@ -66,7 +86,7 @@ npm run prisma:push
 npm run prisma:seed
 ```
 
-### 5. Start the development server
+### 6. Start the development server
 
 ```bash
 npm run dev
@@ -76,15 +96,48 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
+## Authentication
+
+This project uses [Clerk](https://clerk.com) for user authentication, providing:
+
+- **Secure Authentication**: Industry-standard security with built-in protection
+- **Multiple Sign-in Methods**: Email/password, social logins, and more
+- **User Management**: Built-in user profiles and account management
+- **Session Management**: Automatic session handling and refresh
+- **Protected Routes**: Middleware-based route protection
+
+### Clerk Features Used
+
+- `ClerkProvider` - Wraps the app to provide authentication context
+- `SignIn` and `SignUp` components - Pre-built authentication forms
+- `UserButton` - User profile dropdown with account management
+- `SignInButton` and `SignUpButton` - Authentication trigger buttons
+- `useUser` hook - Access user data in client components
+- `auth()` function - Server-side authentication in Server Components
+- `clerkMiddleware` - Protect routes and API endpoints
+
+### Authentication Flow
+
+1. Users visit the landing page
+2. Click "Sign In" or "Sign Up" to authenticate
+3. Clerk handles the authentication process
+4. Authenticated users are redirected to `/dashboard`
+5. Protected routes automatically redirect unauthenticated users to sign-in
+
 ## Project Structure
 
 - `app/` - Next.js App Router
+  - `sign-in/` - Clerk sign-in page
+  - `sign-up/` - Clerk sign-up page
+  - `dashboard/` - Protected dashboard area
 - `components/` - React components
+  - `Header.tsx` - Navigation header with user controls
 - `lib/` - Utility functions and Prisma client
 - `prisma/` - Prisma schema and seed script
 - `app/actions/` - Server actions for data mutations
 - `app/api/` - API routes
 - `app/hooks/` - React Query hooks for data fetching
+- `middleware.ts` - Clerk authentication middleware
 
 ## API Routes
 
@@ -135,10 +188,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 - `useCreateCourse` - Mutation for creating courses
 - `useCreateCourseItem` - Mutation for creating course items
 - `useDeleteCourseItem` - Mutation for deleting course items
-
-## Authentication
-
-This project uses a simple middleware to simulate authentication. In a production environment, you should replace it with a proper authentication solution like NextAuth.js or Auth0.
 
 ## Environment Variables Setup
 
