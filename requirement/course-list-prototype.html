@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程表管理 - 课程表生成器</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --light-gray: #f3f4f6;
+            --border-color: #e5e7eb;
+            --text-color: #1f2937;
+            --text-muted: #6b7280;
+            --card-bg: #ffffff;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --warning: #f59e0b;
+            
+            /* 课程颜色 */
+            --course-math: #3b82f6;     /* 蓝色 */
+            --course-english: #10b981;  /* 绿色 */
+            --course-cs: #8b5cf6;       /* 紫色 */
+            --course-physics: #f59e0b;  /* 黄色 */
+            --course-programming: #ef4444; /* 红色 */
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+        
+        header {
+            background-color: white;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .breadcrumb {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .btn {
+            cursor: pointer;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--light-gray);
+            transform: translateY(-1px);
+        }
+        
+        .btn-icon {
+            padding: 0.5rem;
+            border-radius: 50%;
+        }
+        
+        .toolbar {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .toolbar-left h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .toolbar-left p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        
+        .schedules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .schedule-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .schedule-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .schedule-card-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .schedule-card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .schedule-card-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        .schedule-card-actions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .schedule-card:hover .schedule-card-actions {
+            opacity: 1;
+        }
+        
+        .schedule-card-preview {
+            padding: 1rem;
+        }
+        
+        .mini-schedule {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            background-color: var(--light-gray);
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+        
+        .mini-day-header {
+            background-color: var(--border-color);
+            padding: 0.25rem;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        
+        .mini-time-slot {
+            background-color: white;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            position: relative;
+        }
+        
+        .mini-course {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+        
+        .mini-course-math {
+            background-color: rgba(59, 130, 246, 0.8);
+            color: white;
+        }
+        
+        .mini-course-english {
+            background-color: rgba(16, 185, 129, 0.8);
+            color: white;
+        }
+        
+        .mini-course-cs {
+            background-color: rgba(139, 92, 246, 0.8);
+            color: white;
+        }
+        
+        .mini-course-physics {
+            background-color: rgba(245, 158, 11, 0.8);
+            color: white;
+        }
+        
+        .mini-course-programming {
+            background-color: rgba(239, 68, 68, 0.8);
+            color: white;
+        }
+        
+        .schedule-card-footer {
+            padding: 1rem;
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .course-count {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        .default-badge {
+            background-color: var(--success);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            background-color: var(--light-gray);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--text-muted);
+        }
+        
+        .empty-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-description {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .close {
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        
+        .close:hover {
+            color: var(--text-color);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .delete-warning {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .delete-warning-title {
+            font-weight: 600;
+            color: var(--danger);
+            margin-bottom: 0.5rem;
+        }
+        
+        .delete-warning-text {
+            color: #991b1b;
+            font-size: 0.875rem;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .schedules-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            
+            .toolbar-left {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-left">
+                <h1>课程表管理</h1>
+                <div class="breadcrumb">
+                    <a href="/">首页</a> / 课程表管理
+                </div>
+            </div>
+            <div>
+                <span style="color: var(--text-muted); margin-right: 1rem;">用户名</span>
+                <button class="btn btn-secondary" style="font-size: 0.875rem;">退出登录</button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <h2>我的课程表</h2>
+                <p>管理您的所有课程表，创建新的学期安排</p>
+            </div>
+            <button class="btn" id="createScheduleBtn">
+                <span>➕</span>
+                新建课程表
+            </button>
+        </div>
+        
+        <!-- 课程表列表 -->
+        <div class="schedules-grid" id="schedulesGrid">
+            <!-- 示例课程表卡片 1 -->
+            <div class="schedule-card" data-schedule-id="1">
+                <div class="schedule-card-actions">
+                    <button class="btn btn-icon btn-danger" onclick="showDeleteModal('1', '2024春季学期', 8)">
+                        🗑️
+                    </button>
+                </div>
+                <div class="schedule-card-header">
+                    <div class="schedule-card-title">
+                        2024春季学期
+                    </div>
+                    <div class="schedule-card-meta">
+                        <span>📅 创建时间：2024年2月15日</span>
+                        <span>🕒 最后修改：2024年3月10日</span>
+                    </div>
+                </div>
+                <div class="schedule-card-preview">
+                    <div class="mini-schedule">
+                        <div class="mini-day-header">一</div>
+                        <div class="mini-day-header">二</div>
+                        <div class="mini-day-header">三</div>
+                        <div class="mini-day-header">四</div>
+                        <div class="mini-day-header">五</div>
+                        
+                        <!-- 时间段 1 -->
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-math">数学</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-math">数学</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        
+                        <!-- 时间段 2 -->
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-english">英语</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-english">英语</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        
+                        <!-- 时间段 3 -->
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-physics">物理</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        
+                        <!-- 时间段 4 -->
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-physics">物理</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                    </div>
+                </div>
+                <div class="schedule-card-footer">
+                    <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                        编辑
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 示例课程表卡片 2 -->
+            <div class="schedule-card" data-schedule-id="2">
+                <div class="schedule-card-actions">
+                    <button class="btn btn-icon btn-danger" onclick="showDeleteModal('2', '2024秋季学期', 6)">
+                        🗑️
+                    </button>
+                </div>
+                <div class="schedule-card-header">
+                    <div class="schedule-card-title">
+                        2024秋季学期
+                    </div>
+                    <div class="schedule-card-meta">
+                        <span>📅 创建时间：2024年8月20日</span>
+                        <span>🕒 最后修改：2024年8月25日</span>
+                    </div>
+                </div>
+                <div class="schedule-card-preview">
+                    <div class="mini-schedule">
+                        <div class="mini-day-header">一</div>
+                        <div class="mini-day-header">二</div>
+                        <div class="mini-day-header">三</div>
+                        <div class="mini-day-header">四</div>
+                        <div class="mini-day-header">五</div>
+                        
+                        <!-- 时间段 1 -->
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-cs">计算机</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-cs">计算机</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        
+                        <!-- 时间段 2 -->
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-programming">编程</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot">
+                            <div class="mini-course mini-course-programming">编程</div>
+                        </div>
+                        <div class="mini-time-slot"></div>
+                        
+                        <!-- 其他时间段为空 -->
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                        <div class="mini-time-slot"></div>
+                    </div>
+                </div>
+                <div class="schedule-card-footer">
+                    <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                        编辑
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 空状态（当没有课程表时显示） -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">📅</div>
+            <h3 class="empty-title">还没有课程表</h3>
+            <p class="empty-description">创建您的第一个课程表，开始安排学习计划</p>
+            <button class="btn" onclick="showCreateModal()">
+                <span>➕</span>
+                创建第一个课程表
+            </button>
+        </div>
+    </div>
+    
+    <!-- 新建课程表模态框 -->
+    <div class="modal" id="createModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">新建课程表</h3>
+                <span class="close" onclick="hideCreateModal()">&times;</span>
+            </div>
+            <form id="createScheduleForm">
+                <div class="form-group">
+                    <label for="scheduleName">课程表名称 *</label>
+                    <input type="text" id="scheduleName" name="scheduleName" placeholder="例如：2024春季学期" required>
+                </div>
+                <div class="form-group">
+                    <label for="scheduleDescription">课程表描述</label>
+                    <textarea id="scheduleDescription" name="scheduleDescription" placeholder="简单描述这个课程表的用途（可选）"></textarea>
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideCreateModal()">取消</button>
+                    <button type="submit" class="btn">创建课程表</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 删除确认模态框 -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">删除课程表</h3>
+                <span class="close" onclick="hideDeleteModal()">&times;</span>
+            </div>
+            <div class="delete-warning">
+                <div class="delete-warning-title">⚠️ 警告</div>
+                <div class="delete-warning-text">此操作不可撤销。删除后，该课程表及其所有课程安排将永久丢失。</div>
+            </div>
+            <p>您确定要删除课程表 "<strong id="deleteScheduleName"></strong>" 吗？</p>
+            <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem;">
+                该课程表包含 <span id="deleteCourseCount"></span> 门课程。
+            </p>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label for="confirmScheduleName">请输入课程表名称以确认删除：</label>
+                <input type="text" id="confirmScheduleName" placeholder="输入课程表名称">
+            </div>
+            <div class="actions">
+                <button type="button" class="btn btn-secondary" onclick="hideDeleteModal()">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()" disabled>确认删除</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 全局变量
+        let currentDeleteId = null;
+        let currentDeleteName = null;
+        
+        // 新建课程表
+        function showCreateModal() {
+            document.getElementById('createModal').classList.add('show');
+        }
+        
+        function hideCreateModal() {
+            document.getElementById('createModal').classList.remove('show');
+            document.getElementById('createScheduleForm').reset();
+        }
+        
+        // 删除课程表
+        function showDeleteModal(scheduleId, scheduleName, courseCount) {
+            currentDeleteId = scheduleId;
+            currentDeleteName = scheduleName;
+            document.getElementById('deleteScheduleName').textContent = scheduleName;
+            document.getElementById('deleteCourseCount').textContent = courseCount;
+            document.getElementById('deleteModal').classList.add('show');
+        }
+        
+        function hideDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('show');
+            document.getElementById('confirmScheduleName').value = '';
+            document.getElementById('confirmDeleteBtn').disabled = true;
+            currentDeleteId = null;
+            currentDeleteName = null;
+        }
+        
+        function confirmDelete() {
+            if (currentDeleteId) {
+                // 删除课程表卡片
+                const card = document.querySelector(`[data-schedule-id="${currentDeleteId}"]`);
+                if (card) {
+                    card.remove();
+                }
+                
+                // 检查是否还有课程表，如果没有则显示空状态
+                const remainingCards = document.querySelectorAll('.schedule-card');
+                if (remainingCards.length === 0) {
+                    document.getElementById('emptyState').style.display = 'block';
+                }
+                
+                hideDeleteModal();
+                
+                // 显示成功消息（实际项目中可以用更好的通知组件）
+                alert('课程表已成功删除');
+            }
+        }
+        
+        // 监听事件
+        document.addEventListener('DOMContentLoaded', function() {
+            // 创建课程表表单提交
+            document.getElementById('createScheduleForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const scheduleName = formData.get('scheduleName');
+                const scheduleDescription = formData.get('scheduleDescription');
+                
+                // 模拟创建新课程表
+                createNewScheduleCard(scheduleName, scheduleDescription);
+                hideCreateModal();
+                
+                // 隐藏空状态
+                document.getElementById('emptyState').style.display = 'none';
+            });
+            
+            // 新建课程表按钮
+            document.getElementById('createScheduleBtn').addEventListener('click', showCreateModal);
+            
+            // 删除确认输入验证
+            document.getElementById('confirmScheduleName').addEventListener('input', function() {
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                confirmBtn.disabled = this.value !== currentDeleteName;
+            });
+            
+            // 点击模态框外部关闭
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('show');
+                    }
+                });
+            });
+            
+            // 课程表卡片点击事件（跳转到编辑页面）
+            document.querySelectorAll('.schedule-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // 如果点击的是删除按钮，不触发卡片点击事件
+                    if (e.target.closest('.schedule-card-actions')) {
+                        return;
+                    }
+                    
+                    const scheduleId = this.dataset.scheduleId;
+                    // 实际项目中这里会跳转到课程表编辑页面
+                    alert(`跳转到课程表编辑页面 - ID: ${scheduleId}`);
+                });
+            });
+        });
+        
+        // 创建新课程表卡片
+        function createNewScheduleCard(name, description) {
+            const grid = document.getElementById('schedulesGrid');
+            const newId = Date.now().toString(); // 简单的ID生成
+            const currentDate = new Date().toLocaleDateString('zh-CN');
+            
+            const cardHTML = `
+                <div class="schedule-card" data-schedule-id="${newId}">
+                    <div class="schedule-card-actions">
+                        <button class="btn btn-icon btn-danger" onclick="showDeleteModal('${newId}', '${name}', 0)">
+                            🗑️
+                        </button>
+                    </div>
+                    <div class="schedule-card-header">
+                        <div class="schedule-card-title">
+                            ${name}
+                        </div>
+                        <div class="schedule-card-meta">
+                            <span>📅 创建时间：${currentDate}</span>
+                            <span>🕒 最后修改：${currentDate}</span>
+                        </div>
+                    </div>
+                    <div class="schedule-card-preview">
+                        <div class="mini-schedule">
+                            <div class="mini-day-header">一</div>
+                            <div class="mini-day-header">二</div>
+                            <div class="mini-day-header">三</div>
+                            <div class="mini-day-header">四</div>
+                            <div class="mini-day-header">五</div>
+                            
+                            <!-- 空的时间段 -->
+                            ${Array(20).fill('<div class="mini-time-slot"></div>').join('')}
+                        </div>
+                    </div>
+                    <div class="schedule-card-footer">
+                        <span class="course-count">📚 0门课程</span>
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                            编辑
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            grid.insertAdjacentHTML('beforeend', cardHTML);
+            
+            // 为新卡片添加点击事件
+            const newCard = grid.lastElementChild;
+            newCard.addEventListener('click', function(e) {
+                if (e.target.closest('.schedule-card-actions')) {
+                    return;
+                }
+                
+                const scheduleId = this.dataset.scheduleId;
+                alert(`跳转到课程表编辑页面 - ID: ${scheduleId}`);
+            });
+        }
+        
+        // 显示/隐藏空状态的演示功能
+        function toggleEmptyState() {
+            const grid = document.getElementById('schedulesGrid');
+            const emptyState = document.getElementById('emptyState');
+            const cards = document.querySelectorAll('.schedule-card');
+            
+            if (cards.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 
