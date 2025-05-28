@@ -1,6 +1,7 @@
 "use client";
 import { DndContext, DragEndEvent, DragOverlay } from "@dnd-kit/core";
 import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import { Course, CourseTable } from "@/components/ui/CourseTable";
 import DraggableCourses, { CourseItems } from "@/components/ui/DraggableCourses";
 import { getCourseColorClasses } from "@/lib/utils";
@@ -12,9 +13,6 @@ interface TimeSlot {
   end: Date;
 }
 
-// Mock user ID - In a real app, this would come from authentication context
-const MOCK_USER_ID = "user_123456789";
-
 interface CourseSchedulerProps {
   timeSlots: TimeSlot[];
   courseItems: CourseItems;
@@ -23,6 +21,9 @@ interface CourseSchedulerProps {
 }
 
 export function CourseScheduler({ courseItems: initialCourseItems, timeSlots, courses: initialCourses, tableId }: CourseSchedulerProps) {
+  
+  // 获取当前用户信息
+  const { user, isLoaded } = useUser();
   
   // 使用本地state维护courses和courseItems
   const [localCourses, setLocalCourses] = useState<Course[]>(initialCourses);
@@ -44,6 +45,24 @@ export function CourseScheduler({ courseItems: initialCourseItems, timeSlots, co
 
   // Current dragged course id
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // 如果用户信息还没加载完成，显示加载状态
+  if (!isLoaded) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
+
+  // 如果用户未认证，显示错误信息
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-red-500">请先登录以使用课程管理功能</div>
+      </div>
+    );
+  }
 
   // Drag end handler
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -87,7 +106,7 @@ export function CourseScheduler({ courseItems: initialCourseItems, timeSlots, co
         name: draggedCourseItem.courseName,
         dayOfWeek,
         timeSlotId,
-        userId: MOCK_USER_ID
+        userId: user.id
       });
     } catch (err) {
       // 如果失败，回滚乐观更新
@@ -109,7 +128,7 @@ export function CourseScheduler({ courseItems: initialCourseItems, timeSlots, co
       createCourseItemMutation.mutate({
         tableId,
         courseName: newCourse.courseName,
-        userId: MOCK_USER_ID
+        userId: user.id
       });
     } catch (err) {
       // 回滚乐观更新
@@ -134,7 +153,7 @@ export function CourseScheduler({ courseItems: initialCourseItems, timeSlots, co
       deleteCourseItemMutation.mutate({
         tableId,
         courseId,
-        userId: MOCK_USER_ID
+        userId: user.id
       });
     } catch (err) {
       // 回滚乐观更新

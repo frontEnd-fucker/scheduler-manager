@@ -316,7 +316,7 @@ export default function SchedulesPage() {
                     {schedule._count.courses}门课程
                   </div>
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/dashboard/edit/${schedule.id}`}>
+                    <Link href={`/dashboard/${schedule.id}`}>
                       <Edit className="h-3 w-3 mr-1" />
                       编辑
                     </Link>
