@@ -19,7 +19,7 @@ export default async function DashboardPage() {
 
   try {
     // Fetch course table data directly on the server using the authenticated user ID
-    const courseTable = await getCourseTable(MOCK_TABLE_ID, 'user_123456789')
+    const courseTable = await getCourseTable(MOCK_TABLE_ID, userId)
     
     // Transform data to match CourseData type by adding startTime and endTime
     const transformedCourses = courseTable.courses.map(course => {

@@ -5,9 +5,10 @@ import { z } from "zod";
 // GET /api/course-tables/[id]/course-items/[itemId] - Get a specific course item
 export async function GET(
   request: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
+    const { id, itemId } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -20,7 +21,7 @@ export async function GET(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -34,8 +35,8 @@ export async function GET(
 
     const courseItem = await prisma.courseItem.findUnique({
       where: {
-        id: params.itemId,
-        courseTableId: params.id,
+        id: itemId,
+        courseTableId: id,
       },
     });
 
@@ -59,9 +60,10 @@ export async function GET(
 // PUT /api/course-tables/[id]/course-items/[itemId] - Update a course item
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
+    const { id, itemId } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -74,7 +76,7 @@ export async function PUT(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -89,8 +91,8 @@ export async function PUT(
     // Check if the course item exists and belongs to the course table
     const existingCourseItem = await prisma.courseItem.findUnique({
       where: {
-        id: params.itemId,
-        courseTableId: params.id,
+        id: itemId,
+        courseTableId: id,
       },
     });
 
@@ -121,8 +123,8 @@ export async function PUT(
       const duplicateCourseItem = await prisma.courseItem.findFirst({
         where: {
           courseName: validation.data.courseName,
-          courseTableId: params.id,
-          id: { not: params.itemId },
+          courseTableId: id,
+          id: { not: itemId },
         },
       });
 
@@ -138,7 +140,7 @@ export async function PUT(
         await prisma.course.updateMany({
           where: {
             name: existingCourseItem.courseName,
-            courseTableId: params.id,
+            courseTableId: id,
           },
           data: {
             name: validation.data.courseName,
@@ -149,7 +151,7 @@ export async function PUT(
 
     const updatedCourseItem = await prisma.courseItem.update({
       where: {
-        id: params.itemId,
+        id: itemId,
       },
       data: validation.data,
     });
@@ -167,9 +169,10 @@ export async function PUT(
 // DELETE /api/course-tables/[id]/course-items/[itemId] - Delete a course item
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
+    const { id, itemId } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -182,7 +185,7 @@ export async function DELETE(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -197,8 +200,8 @@ export async function DELETE(
     // Get the course item to be deleted
     const courseItem = await prisma.courseItem.findUnique({
       where: {
-        id: params.itemId,
-        courseTableId: params.id,
+        id: itemId,
+        courseTableId: id,
       },
     });
 
@@ -209,25 +212,12 @@ export async function DELETE(
       );
     }
 
-    // If the course item is used, check and ask for confirmation
+    // If the course item is used, delete all associated courses first
     if (courseItem.isUsed) {
-      // Check if there's a confirming header
-      const confirmDelete = request.headers.get("x-confirm-delete");
-      if (!confirmDelete || confirmDelete !== "true") {
-        return NextResponse.json(
-          { 
-            error: "Course item is in use. Set x-confirm-delete header to true to confirm deletion.",
-            isUsed: true
-          },
-          { status: 409 }
-        );
-      }
-      
-      // Delete associated courses
       await prisma.course.deleteMany({
         where: {
           name: courseItem.courseName,
-          courseTableId: params.id,
+          courseTableId: id,
         },
       });
     }
@@ -235,11 +225,11 @@ export async function DELETE(
     // Delete the course item
     await prisma.courseItem.delete({
       where: {
-        id: params.itemId,
+        id: itemId,
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ message: "Course item deleted successfully" });
   } catch (error) {
     console.error("Error deleting course item:", error);
     return NextResponse.json(

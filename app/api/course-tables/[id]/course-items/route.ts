@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-// GET /api/course-tables/[id]/course-items - Get all course items for a specific course table
+// GET /api/course-tables/[id]/course-items - Get all course items for a course table
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -20,7 +21,7 @@ export async function GET(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -34,7 +35,7 @@ export async function GET(
 
     const courseItems = await prisma.courseItem.findMany({
       where: {
-        courseTableId: params.id,
+        courseTableId: id,
       },
       orderBy: {
         createdAt: "asc",
@@ -54,9 +55,10 @@ export async function GET(
 // POST /api/course-tables/[id]/course-items - Create a new course item
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -69,7 +71,7 @@ export async function POST(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -99,7 +101,7 @@ export async function POST(
     const existingCourseItem = await prisma.courseItem.findFirst({
       where: {
         courseName: validation.data.courseName,
-        courseTableId: params.id,
+        courseTableId: id,
       },
     });
 
@@ -113,7 +115,7 @@ export async function POST(
     const courseItem = await prisma.courseItem.create({
       data: {
         courseName: validation.data.courseName,
-        courseTableId: params.id,
+        courseTableId: id,
         isUsed: false,
       },
     });

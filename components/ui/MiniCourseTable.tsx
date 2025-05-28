@@ -4,7 +4,7 @@ import { getCourseColorStyle } from "@/lib/utils";
 
 interface MiniCourseTableProps {
   courses: Course[];
-  timeSlots: TimeSlot[];
+  timeSlots?: TimeSlot[];
   className?: string;
 }
 
@@ -15,8 +15,31 @@ export const MiniCourseTable: React.FC<MiniCourseTableProps> = ({
   timeSlots,
   className = "",
 }) => {
-  // 只显示前4个时间段，简化预览
-  const previewTimeSlots = timeSlots.slice(0, 4);
+  // 如果没有提供timeSlots，从课程数据中生成
+  const getTimeSlots = (): TimeSlot[] => {
+    if (timeSlots && timeSlots.length > 0) {
+      return timeSlots.slice(0, 4); // 只显示前4个时间段，简化预览
+    }
+    
+    // 从课程数据中提取唯一的时间段
+    const uniqueTimeSlots = new Map<number, TimeSlot>();
+    courses.forEach(course => {
+      if (!uniqueTimeSlots.has(course.timeSlotId)) {
+        uniqueTimeSlots.set(course.timeSlotId, {
+          id: course.timeSlotId,
+          start: course.startTime,
+          end: course.endTime,
+        });
+      }
+    });
+    
+    // 按timeSlotId排序并只取前4个
+    return Array.from(uniqueTimeSlots.values())
+      .sort((a, b) => a.id - b.id)
+      .slice(0, 4);
+  };
+
+  const previewTimeSlots = getTimeSlots();
 
   const getCourseDisplayColor = (courseName: string) => {
     const colors = getCourseColorStyle(courseName);

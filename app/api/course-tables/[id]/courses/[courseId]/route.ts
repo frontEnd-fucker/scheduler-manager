@@ -5,9 +5,10 @@ import { z } from "zod";
 // GET /api/course-tables/[id]/courses/[courseId] - Get a specific course
 export async function GET(
   request: Request,
-  { params }: { params: { id: string; courseId: string } }
+  { params }: { params: Promise<{ id: string; courseId: string }> }
 ) {
   try {
+    const { id, courseId } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -20,7 +21,7 @@ export async function GET(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -34,8 +35,8 @@ export async function GET(
 
     const course = await prisma.course.findUnique({
       where: {
-        id: params.courseId,
-        courseTableId: params.id,
+        id: courseId,
+        courseTableId: id,
       },
       include: {
         timeSlot: true,
@@ -49,7 +50,14 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(course);
+    // Transform the data to include startTime and endTime
+    const transformedCourse = {
+      ...course,
+      startTime: course.timeSlot.start,
+      endTime: course.timeSlot.end,
+    };
+
+    return NextResponse.json(transformedCourse);
   } catch (error) {
     console.error("Error fetching course:", error);
     return NextResponse.json(
@@ -62,9 +70,10 @@ export async function GET(
 // PUT /api/course-tables/[id]/courses/[courseId] - Update a course
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string; courseId: string } }
+  { params }: { params: Promise<{ id: string; courseId: string }> }
 ) {
   try {
+    const { id, courseId } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -77,7 +86,7 @@ export async function PUT(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -92,8 +101,8 @@ export async function PUT(
     // Check if the course exists and belongs to the course table
     const existingCourse = await prisma.course.findUnique({
       where: {
-        id: params.courseId,
-        courseTableId: params.id,
+        id: courseId,
+        courseTableId: id,
       },
     });
 
@@ -106,8 +115,8 @@ export async function PUT(
 
     const CourseSchema = z.object({
       name: z.string().min(1, "Course name is required").optional(),
-      dayOfWeek: z.number().min(1).max(5).optional(),
-      timeSlotId: z.number().int().positive().optional(),
+      dayOfWeek: z.number().min(1).max(7).optional(),
+      timeSlotId: z.number().optional(),
     });
 
     const body = await request.json();
@@ -120,62 +129,63 @@ export async function PUT(
       );
     }
 
-    // If changing time slot or day, check if it's available
-    if (validation.data.dayOfWeek || validation.data.timeSlotId) {
-      const newDayOfWeek = validation.data.dayOfWeek || existingCourse.dayOfWeek;
-      const newTimeSlotId = validation.data.timeSlotId || existingCourse.timeSlotId;
+    // If changing time slot, check if it exists
+    if (validation.data.timeSlotId && validation.data.timeSlotId !== existingCourse.timeSlotId) {
+      const timeSlot = await prisma.timeSlot.findFirst({
+        where: {
+          id: validation.data.timeSlotId,
+          courseTableId: id,
+        },
+      });
 
-      // Check if there's already a course in this day and time slot (excluding the current course)
+      if (!timeSlot) {
+        return NextResponse.json(
+          { error: "Time slot not found" },
+          { status: 404 }
+        );
+      }
+    }
+
+    // If changing day or time slot, check for conflicts
+    const newDayOfWeek = validation.data.dayOfWeek || existingCourse.dayOfWeek;
+    const newTimeSlotId = validation.data.timeSlotId || existingCourse.timeSlotId;
+
+    if (newDayOfWeek !== existingCourse.dayOfWeek || newTimeSlotId !== existingCourse.timeSlotId) {
       const conflictingCourse = await prisma.course.findFirst({
         where: {
-          courseTableId: params.id,
+          courseTableId: id,
           dayOfWeek: newDayOfWeek,
           timeSlotId: newTimeSlotId,
-          id: { not: params.courseId },
+          id: { not: courseId },
         },
       });
 
       if (conflictingCourse) {
         return NextResponse.json(
-          { error: "A course already exists in this day and time slot" },
+          { error: "A course already exists at this time slot" },
           { status: 409 }
         );
       }
     }
 
-    // If changing the name, update the isUsed flag for course items
-    if (validation.data.name && validation.data.name !== existingCourse.name) {
-      // Set the old course item to not used
-      await prisma.courseItem.updateMany({
-        where: {
-          courseName: existingCourse.name,
-          courseTableId: params.id,
-        },
-        data: {
-          isUsed: false,
-        },
-      });
-
-      // Set the new course item to used
-      await prisma.courseItem.updateMany({
-        where: {
-          courseName: validation.data.name,
-          courseTableId: params.id,
-        },
-        data: {
-          isUsed: true,
-        },
-      });
-    }
-
     const updatedCourse = await prisma.course.update({
       where: {
-        id: params.courseId,
+        id: courseId,
       },
       data: validation.data,
+      include: {
+        timeSlot: true,
+      },
     });
 
-    return NextResponse.json(updatedCourse);
+    // Transform the data to include startTime and endTime
+    const transformedCourse = {
+      ...updatedCourse,
+      startTime: updatedCourse.timeSlot.start,
+      endTime: updatedCourse.timeSlot.end,
+    };
+
+    return NextResponse.json(transformedCourse);
   } catch (error) {
     console.error("Error updating course:", error);
     return NextResponse.json(
@@ -188,9 +198,10 @@ export async function PUT(
 // DELETE /api/course-tables/[id]/courses/[courseId] - Delete a course
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string; courseId: string } }
+  { params }: { params: Promise<{ id: string; courseId: string }> }
 ) {
   try {
+    const { id, courseId } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -203,7 +214,7 @@ export async function DELETE(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -218,8 +229,8 @@ export async function DELETE(
     // Get the course to be deleted
     const course = await prisma.course.findUnique({
       where: {
-        id: params.courseId,
-        courseTableId: params.id,
+        id: courseId,
+        courseTableId: id,
       },
     });
 
@@ -233,22 +244,11 @@ export async function DELETE(
     // Delete the course
     await prisma.course.delete({
       where: {
-        id: params.courseId,
+        id: courseId,
       },
     });
 
-    // Update the course item to not used
-    await prisma.courseItem.updateMany({
-      where: {
-        courseName: course.name,
-        courseTableId: params.id,
-      },
-      data: {
-        isUsed: false,
-      },
-    });
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ message: "Course deleted successfully" });
   } catch (error) {
     console.error("Error deleting course:", error);
     return NextResponse.json(

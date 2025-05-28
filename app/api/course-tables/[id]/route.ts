@@ -5,9 +5,10 @@ import { z } from "zod";
 // GET /api/course-tables/[id] - Get a specific course table
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -19,26 +20,40 @@ export async function GET(
 
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
-        userId, // Ensure the table belongs to the user
+        id,
+        userId,
       },
       include: {
-        timeSlots: {
-          orderBy: { order: "asc" },
+        courses: {
+          include: {
+            timeSlot: true,
+          },
         },
-        courses: true,
+        timeSlots: {
+          orderBy: { order: 'asc' },
+        },
         courseItems: true,
       },
     });
 
     if (!courseTable) {
       return NextResponse.json(
-        { error: "Course table not found" },
+        { error: "Course table not found or access denied" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(courseTable);
+    // Transform the data to match the expected format
+    const transformedCourseTable = {
+      ...courseTable,
+      courses: courseTable.courses.map(course => ({
+        ...course,
+        startTime: course.timeSlot.start,
+        endTime: course.timeSlot.end,
+      })),
+    };
+
+    return NextResponse.json(transformedCourseTable);
   } catch (error) {
     console.error("Error fetching course table:", error);
     return NextResponse.json(
@@ -51,9 +66,10 @@ export async function GET(
 // PUT /api/course-tables/[id] - Update a course table
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -63,15 +79,15 @@ export async function PUT(
       );
     }
 
-    // First check if the course table exists and belongs to the user
-    const existingTable = await prisma.courseTable.findUnique({
+    // Check if the course table exists and belongs to the user
+    const existingCourseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
 
-    if (!existingTable) {
+    if (!existingCourseTable) {
       return NextResponse.json(
         { error: "Course table not found or access denied" },
         { status: 404 }
@@ -79,7 +95,7 @@ export async function PUT(
     }
 
     const CourseTableSchema = z.object({
-      name: z.string().min(1, "Course table name is required"),
+      name: z.string().min(1, "Course table name is required").optional(),
     });
 
     const body = await request.json();
@@ -92,12 +108,39 @@ export async function PUT(
       );
     }
 
+    // If changing the name, check if it's unique for this user
+    if (validation.data.name && validation.data.name !== existingCourseTable.name) {
+      const duplicateCourseTable = await prisma.courseTable.findFirst({
+        where: {
+          name: validation.data.name,
+          userId,
+          id: { not: id },
+        },
+      });
+
+      if (duplicateCourseTable) {
+        return NextResponse.json(
+          { error: "A course table with this name already exists" },
+          { status: 409 }
+        );
+      }
+    }
+
     const updatedCourseTable = await prisma.courseTable.update({
       where: {
-        id: params.id,
+        id,
       },
-      data: {
-        name: validation.data.name,
+      data: validation.data,
+      include: {
+        courses: {
+          include: {
+            timeSlot: true,
+          },
+        },
+        timeSlots: {
+          orderBy: { order: 'asc' },
+        },
+        courseItems: true,
       },
     });
 
@@ -114,9 +157,10 @@ export async function PUT(
 // DELETE /api/course-tables/[id] - Delete a course table
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -126,29 +170,29 @@ export async function DELETE(
       );
     }
 
-    // First check if the course table exists and belongs to the user
-    const existingTable = await prisma.courseTable.findUnique({
+    // Check if the course table exists and belongs to the user
+    const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
 
-    if (!existingTable) {
+    if (!courseTable) {
       return NextResponse.json(
         { error: "Course table not found or access denied" },
         { status: 404 }
       );
     }
 
-    // Delete the course table (cascades to courses, timeSlots, and courseItems)
+    // Delete the course table (this will cascade delete courses, timeSlots, and courseItems)
     await prisma.courseTable.delete({
       where: {
-        id: params.id,
+        id,
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ message: "Course table deleted successfully" });
   } catch (error) {
     console.error("Error deleting course table:", error);
     return NextResponse.json(

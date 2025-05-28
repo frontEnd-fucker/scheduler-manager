@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-// GET /api/course-tables/[id]/time-slots - Get all time slots for a specific course table
+// GET /api/course-tables/[id]/time-slots - Get all time slots for a course table
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -20,7 +21,7 @@ export async function GET(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -34,7 +35,7 @@ export async function GET(
 
     const timeSlots = await prisma.timeSlot.findMany({
       where: {
-        courseTableId: params.id,
+        courseTableId: id,
       },
       orderBy: {
         order: "asc",
@@ -54,9 +55,10 @@ export async function GET(
 // POST /api/course-tables/[id]/time-slots - Create a new time slot
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const userId = request.headers.get("x-user-id");
     
     if (!userId) {
@@ -69,7 +71,7 @@ export async function POST(
     // Check if the course table exists and belongs to the user
     const courseTable = await prisma.courseTable.findUnique({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -84,8 +86,14 @@ export async function POST(
     const TimeSlotSchema = z.object({
       start: z.string().regex(/^\d{2}:\d{2}$/, "Start time must be in format HH:MM"),
       end: z.string().regex(/^\d{2}:\d{2}$/, "End time must be in format HH:MM"),
-      order: z.number().int().positive(),
-    });
+      order: z.number().int().positive("Order must be a positive integer"),
+    }).refine(
+      (data) => data.start < data.end,
+      {
+        message: "Start time must be before end time",
+        path: ["end"],
+      }
+    );
 
     const body = await request.json();
     const validation = TimeSlotSchema.safeParse(body);
@@ -97,11 +105,11 @@ export async function POST(
       );
     }
 
-    // Check if there's already a time slot with this order
+    // Check if a time slot with this order already exists in this course table
     const existingTimeSlot = await prisma.timeSlot.findFirst({
       where: {
-        courseTableId: params.id,
         order: validation.data.order,
+        courseTableId: id,
       },
     });
 
@@ -119,20 +127,12 @@ export async function POST(
     const startDate = new Date(2000, 0, 1, startHour, startMinute);
     const endDate = new Date(2000, 0, 1, endHour, endMinute);
 
-    // Check that end time is after start time
-    if (endDate <= startDate) {
-      return NextResponse.json(
-        { error: "End time must be after start time" },
-        { status: 400 }
-      );
-    }
-
     const timeSlot = await prisma.timeSlot.create({
       data: {
         start: startDate,
         end: endDate,
         order: validation.data.order,
-        courseTableId: params.id,
+        courseTableId: id,
       },
     });
 
