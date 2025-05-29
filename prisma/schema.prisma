@@ -63,12 +63,13 @@ model TimeSlot {
 // CourseItem model for the draggable course items
 model CourseItem {
   id         String  @id @default(cuid())
-  courseName String  @unique
+  courseName String
   isUsed     Boolean @default(false)
   courseTable CourseTable @relation(fields: [courseTableId], references: [id], onDelete: Cascade)
   courseTableId String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@unique([courseName, courseTableId])
   @@index([courseTableId])
-} 
+}

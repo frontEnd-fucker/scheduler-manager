@@ -151,7 +151,8 @@ export async function createSchedule(
       _count: schedule._count,
     };
 
-    revalidatePath("/dashboard/schedules");
+    revalidatePath("/dashboard");
+    revalidatePath("/schedules");
     return { data: transformedSchedule };
   } catch (error) {
     console.error("创建课程表失败:", error);
@@ -186,7 +187,8 @@ export async function deleteSchedule(scheduleId: string): Promise<{ success?: bo
       },
     });
 
-    revalidatePath("/dashboard/schedules");
+    revalidatePath("/dashboard");
+    revalidatePath("/schedules");
     return { success: true };
   } catch (error) {
     console.error("删除课程表失败:", error);
@@ -260,7 +262,9 @@ export async function updateSchedule(
       _count: updatedSchedule._count,
     };
 
-    revalidatePath("/dashboard/schedules");
+    revalidatePath("/dashboard");
+    revalidatePath("/schedules");
+    revalidatePath(`/schedules/${scheduleId}`);
     return { data: transformedSchedule };
   } catch (error) {
     console.error("更新课程表失败:", error);
