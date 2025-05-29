@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useTransition } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -260,14 +259,6 @@ export default function SchedulesPage() {
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">还没有课程表</h3>
             <p className="text-gray-600 mb-6">创建您的第一个课程表，开始安排学习计划</p>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  创建第一个课程表
-                </Button>
-              </DialogTrigger>
-            </Dialog>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
