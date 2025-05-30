@@ -7,16 +7,18 @@ import { Button } from '@/components/ui/button'
 import { Calendar, Plus, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 
-export default async function DashboardPage({ params }: { params: { id: string } }) {
+export default async function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth()
   
   if (!userId) {
     redirect('/sign-in')
   }
 
+  const { id } = await params;
+
   try {
     // Fetch course table data directly on the server using the authenticated user ID
-    const courseTable = await getCourseTable(params.id, userId)
+    const courseTable = await getCourseTable(id, userId)
     
     // Transform data to match CourseData type by adding startTime and endTime
     const transformedCourses = courseTable.courses.map(course => {
@@ -84,7 +86,7 @@ export default async function DashboardPage({ params }: { params: { id: string }
             timeSlots={courseTable.timeSlots}
             courseItems={courseTable.courseItems}
             courses={transformedCourses}
-            tableId={params.id} 
+            tableId={id} 
           />
         </div>
       </div>
