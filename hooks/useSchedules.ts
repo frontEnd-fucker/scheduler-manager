@@ -20,6 +20,26 @@ export type Schedule = {
   };
 };
 
+// API 响应类型（原始数据，日期为字符串）
+type ScheduleApiResponse = {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  courses: Array<{
+    id: string;
+    name: string;
+    dayOfWeek: number;
+    timeSlotId: number;
+    startTime: string;
+    endTime: string;
+  }>;
+  _count: {
+    courses: number;
+  };
+};
+
 export type CreateScheduleData = {
   name: string;
   description?: string;
@@ -30,8 +50,8 @@ export type UpdateScheduleData = {
   description?: string;
 };
 
-// API 调用函数
-const apiRequest = async (url: string, options?: RequestInit) => {
+// 泛型 API 调用函数
+const apiRequest = async <T = unknown>(url: string, options?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -45,8 +65,20 @@ const apiRequest = async (url: string, options?: RequestInit) => {
     throw new Error(errorData.error || `HTTP错误: ${response.status}`);
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 };
+
+// 数据转换工具函数
+const transformScheduleData = (schedule: ScheduleApiResponse): Schedule => ({
+  ...schedule,
+  createdAt: new Date(schedule.createdAt),
+  updatedAt: new Date(schedule.updatedAt),
+  courses: schedule.courses.map((course) => ({
+    ...course,
+    startTime: new Date(course.startTime),
+    endTime: new Date(course.endTime),
+  })),
+});
 
 export const useSchedules = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -59,19 +91,10 @@ export const useSchedules = () => {
     setError(null);
     
     try {
-      const data = await apiRequest('/api/schedules');
+      const data = await apiRequest<ScheduleApiResponse[]>('/api/schedules');
       
       // 转换日期字符串为Date对象
-      const transformedData = data.map((schedule: any) => ({
-        ...schedule,
-        createdAt: new Date(schedule.createdAt),
-        updatedAt: new Date(schedule.updatedAt),
-        courses: schedule.courses.map((course: any) => ({
-          ...course,
-          startTime: new Date(course.startTime),
-          endTime: new Date(course.endTime),
-        })),
-      }));
+      const transformedData = data.map(transformScheduleData);
       
       setSchedules(transformedData);
     } catch (err) {
@@ -89,22 +112,13 @@ export const useSchedules = () => {
     setError(null);
     
     try {
-      const newSchedule = await apiRequest('/api/schedules', {
+      const newSchedule = await apiRequest<ScheduleApiResponse>('/api/schedules', {
         method: 'POST',
         body: JSON.stringify(data),
       });
       
       // 转换日期字符串为Date对象
-      const transformedSchedule = {
-        ...newSchedule,
-        createdAt: new Date(newSchedule.createdAt),
-        updatedAt: new Date(newSchedule.updatedAt),
-        courses: newSchedule.courses.map((course: any) => ({
-          ...course,
-          startTime: new Date(course.startTime),
-          endTime: new Date(course.endTime),
-        })),
-      };
+      const transformedSchedule = transformScheduleData(newSchedule);
       
       setSchedules(prev => [transformedSchedule, ...prev]);
       return transformedSchedule;
@@ -124,22 +138,13 @@ export const useSchedules = () => {
     setError(null);
     
     try {
-      const updatedSchedule = await apiRequest(`/api/schedules/${id}`, {
+      const updatedSchedule = await apiRequest<ScheduleApiResponse>(`/api/schedules/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
       
       // 转换日期字符串为Date对象
-      const transformedSchedule = {
-        ...updatedSchedule,
-        createdAt: new Date(updatedSchedule.createdAt),
-        updatedAt: new Date(updatedSchedule.updatedAt),
-        courses: updatedSchedule.courses.map((course: any) => ({
-          ...course,
-          startTime: new Date(course.startTime),
-          endTime: new Date(course.endTime),
-        })),
-      };
+      const transformedSchedule = transformScheduleData(updatedSchedule);
       
       setSchedules(prev => 
         prev.map(schedule => 
@@ -163,7 +168,7 @@ export const useSchedules = () => {
     setError(null);
     
     try {
-      await apiRequest(`/api/schedules/${id}`, {
+      await apiRequest<void>(`/api/schedules/${id}`, {
         method: 'DELETE',
       });
       
@@ -185,19 +190,10 @@ export const useSchedules = () => {
     setError(null);
     
     try {
-      const schedule = await apiRequest(`/api/schedules/${id}`);
+      const schedule = await apiRequest<ScheduleApiResponse>(`/api/schedules/${id}`);
       
       // 转换日期字符串为Date对象
-      const transformedSchedule = {
-        ...schedule,
-        createdAt: new Date(schedule.createdAt),
-        updatedAt: new Date(schedule.updatedAt),
-        courses: schedule.courses.map((course: any) => ({
-          ...course,
-          startTime: new Date(course.startTime),
-          endTime: new Date(course.endTime),
-        })),
-      };
+      const transformedSchedule = transformScheduleData(schedule);
       
       return transformedSchedule;
     } catch (err) {
