@@ -120,7 +120,11 @@ export async function PUT(
     }
 
     // Convert string dates to Date objects if provided
-    const updateData: any = {};
+    const updateData: {
+      start?: Date;
+      end?: Date; 
+      order?: number;
+    } = {};
     if (validation.data.start) {
       updateData.start = new Date(validation.data.start);
     }

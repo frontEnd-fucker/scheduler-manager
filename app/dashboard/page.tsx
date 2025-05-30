@@ -338,7 +338,7 @@ export default function SchedulesPage() {
                   {deleteScheduleData && (
                     <>
                       <p>
-                        您确定要删除课程表 "<strong>{deleteScheduleData.name}</strong>" 吗？
+                        您确定要删除课程表 &quot;<strong>{deleteScheduleData.name}</strong>&quot; 吗？
                       </p>
                       <p className="text-sm text-gray-600">
                         该课程表包含 <span className="font-medium">{deleteScheduleData._count.courses}</span> 门课程。

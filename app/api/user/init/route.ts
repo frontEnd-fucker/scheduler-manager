@@ -1,16 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
 
-// 验证输入数据的 schema
-const InitUserSchema = z.object({
-  userId: z.string().optional(),
-  email: z.string().email().optional(),
-  name: z.string().optional().nullable(),
-});
-
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const { userId } = await auth();
     
