@@ -1,0 +1,40 @@
+#!/bin/sh
+
+echo "🔍 Running ESLint before push..."
+
+# 检查是否有待推送的提交
+commits_to_push=$(git rev-list --count @{u}..HEAD 2>/dev/null || echo "0")
+
+if [ "$commits_to_push" = "0" ]; then
+    echo "ℹ️  No new commits to push, but running full ESLint check..."
+    npm run lint
+else
+    echo "📝 Found $commits_to_push commit(s) to push"
+    
+    # 获取要推送的文件列表（只检查 .ts 和 .tsx 文件）
+    files_to_check=$(git diff --name-only @{u}..HEAD | grep -E '\.(ts|tsx)$' | tr '\n' ' ')
+    
+    if [ -n "$files_to_check" ]; then
+        echo "🔎 Checking modified TypeScript files: $files_to_check"
+        npx eslint $files_to_check
+    else
+        echo "ℹ️  No TypeScript files to check in push commits"
+        exit 0
+    fi
+fi
+
+# 检查 ESLint 的退出状态
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ ESLint check failed. Push aborted."
+    echo "Please fix the linting errors before pushing."
+    echo ""
+    echo "To fix errors automatically (where possible), run:"
+    echo "  npm run lint:fix"
+    echo ""
+    echo "To bypass this check (not recommended), run:"
+    echo "  git push --no-verify"
+    exit 1
+fi
+
+echo "✅ ESLint check passed. Proceeding with push..." 
